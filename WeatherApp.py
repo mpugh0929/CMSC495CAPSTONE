@@ -3,6 +3,9 @@ from tkinter import messagebox
 
 class LoginApp:
     def __init__(self, root):
+        """
+        This is the initialization function
+        """
         self.root = root
         self.root.title("Weather App")
         self.root.geometry("400x200")  # Set the initial size of the window
@@ -10,7 +13,7 @@ class LoginApp:
         # Center the window on the screen
         self.center_window()
 
-        # Create frames for better organization
+        # create base info frame
         self.login_frame = tk.Frame(root, pady=20)
         self.login_frame.pack()
 
@@ -27,17 +30,16 @@ class LoginApp:
         self.login_button = tk.Button(self.login_frame, text="Login", font=("Arial", 12), command=self.login)
         self.login_button.grid(row=2, columnspan=2, pady=10)
 
-        # Create a separate frame for registration
+        # set up register frame
         self.register_frame = tk.Frame(root)
         self.register_frame.pack()
 
         self.register_button = tk.Button(self.register_frame, text="Register", font=("Arial", 12), command=self.register)
         self.register_button.pack(pady=10)
 
-        # Load existing user credentials
         self.user_credentials = self.load_credentials()
 
-        # Create a frame for displaying weather information
+        # create weather placeholder frame
         self.weather_frame = tk.Frame(root)
         self.weather_label = tk.Label(self.weather_frame, text="WEATHER", font=("Arial", 20))
         self.weather_label.pack(expand=True)
@@ -46,18 +48,21 @@ class LoginApp:
         self.weather_button.pack(pady=10)
 
     def center_window(self):
-        # Get the screen width and height
+        """
+        This function centers the gui on start
+        """
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
 
-        # Calculate the x and y coordinates to center the window
         x = (screen_width - self.root.winfo_reqwidth()) / 2
         y = (screen_height - self.root.winfo_reqheight()) / 2
 
-        # Set the new coordinates
         self.root.geometry("+%d+%d" % (x, y))
 
     def login(self):
+        """
+        This function is executed when the login button is clicked
+        """
         username = self.username_entry.get()
         password = self.password_entry.get()
 
@@ -70,6 +75,9 @@ class LoginApp:
             messagebox.showerror("Login Failed", "Username not found")
 
     def register(self):
+        """
+        This function is executed when the register button is clicked
+        """
         username = self.username_entry.get()
         password = self.password_entry.get()
 
@@ -83,6 +91,11 @@ class LoginApp:
             messagebox.showinfo("Registration Successful", "User registered successfully")
 
     def load_credentials(self):
+        """This function loads the credentials written to file
+
+        Returns:
+            dictionary: list of credentials, empty if cannot find file
+        """
         try:
             with open("user_credentials.txt", "r") as file:
                 lines = file.readlines()
@@ -95,23 +108,26 @@ class LoginApp:
             return {}
 
     def save_credentials(self):
+        """
+        This function saves the user entered credentials to file
+        """
         with open("user_credentials.txt", "w") as file:
             for username, password in self.user_credentials.items():
                 file.write(f"{username}:{password}\n")
 
     def show_weather_page(self):
-        # Hide the login and registration frames
+        # hide login frame
         self.login_frame.pack_forget()
         self.register_frame.pack_forget()
 
-        # Display the weather frame
+        # show logged in weather frame
         self.weather_frame.pack(fill=tk.BOTH, expand=True)
 
     def logout(self):
-        # Hide the weather frame
+        # hide logged in frame
         self.weather_frame.pack_forget()
 
-        # Show the login and registration frames again
+        # show reg frame
         self.login_frame.pack()
         self.register_frame.pack()
 
