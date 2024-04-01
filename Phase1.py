@@ -2,8 +2,6 @@ import tkinter as tk
 from tkinter import messagebox
 
 class LoginApp:
-    API_KEY = "129124b09cdff6292a9970660cd37091"
-
     def __init__(self, root):
         """
         This is the initialization function
