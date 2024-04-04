@@ -1,5 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox
+import customtkinter
+
+customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
+customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "green", "dark-blue"
 
 class LoginApp:
     API_KEY = "129124b09cdff6292a9970660cd37091"
@@ -16,37 +20,37 @@ class LoginApp:
         self.center_window()
 
         # create base info frame
-        self.login_frame = tk.Frame(root, pady=20)
-        self.login_frame.pack()
+        self.login_frame = customtkinter.CTkFrame(master=root, fg_color="transparent")
+        self.login_frame.pack(pady=20)
 
-        self.username_label = tk.Label(self.login_frame, text="Username:", font=("Arial", 12))
+        self.username_label = customtkinter.CTkLabel(self.login_frame, text="Username:", font=("Arial", 12))
         self.username_label.grid(row=0, column=0, sticky="w")
-        self.username_entry = tk.Entry(self.login_frame, font=("Arial", 12))
+        self.username_entry = customtkinter.CTkEntry(self.login_frame, font=("Arial", 12))
         self.username_entry.grid(row=0, column=1, padx=10)
 
-        self.password_label = tk.Label(self.login_frame, text="Password:", font=("Arial", 12))
+        self.password_label = customtkinter.CTkLabel(self.login_frame, text="Password:", font=("Arial", 12))
         self.password_label.grid(row=1, column=0, sticky="w")
-        self.password_entry = tk.Entry(self.login_frame, show="*", font=("Arial", 12))
+        self.password_entry = customtkinter.CTkEntry(self.login_frame, show="*", font=("Arial", 12))
         self.password_entry.grid(row=1, column=1, padx=10)
 
-        self.login_button = tk.Button(self.login_frame, text="Login", font=("Arial", 12), command=self.login)
+        self.login_button = customtkinter.CTkButton(self.login_frame, text="Login", font=("Arial", 12), command=self.login)
         self.login_button.grid(row=2, columnspan=2, pady=10)
 
         # set up register frame
-        self.register_frame = tk.Frame(root)
+        self.register_frame = customtkinter.CTkFrame(master=root, fg_color="transparent")
         self.register_frame.pack()
 
-        self.register_button = tk.Button(self.register_frame, text="Register", font=("Arial", 12), command=self.register)
+        self.register_button = customtkinter.CTkButton(self.register_frame, text="Register", font=("Arial", 12), command=self.register)
         self.register_button.pack(pady=10)
 
         self.user_credentials = self.load_credentials()
 
         # create weather placeholder frame
-        self.weather_frame = tk.Frame(root)
-        self.weather_label = tk.Label(self.weather_frame, text="WEATHER", font=("Arial", 20))
+        self.weather_frame = customtkinter.CTkFrame(root)
+        self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="WEATHER", font=("Arial", 20))
         self.weather_label.pack(expand=True)
 
-        self.weather_button = tk.Button(self.weather_frame, text="Logout", font=("Arial", 12), command=self.logout)
+        self.weather_button = customtkinter.CTkButton(self.weather_frame, text="Logout", font=("Arial", 12), command=self.logout)
         self.weather_button.pack(pady=10)
 
     def center_window(self):
@@ -134,7 +138,7 @@ class LoginApp:
         self.register_frame.pack()
 
 if __name__ == "__main__":
-    root = tk.Tk()
+    root = customtkinter.CTk() #CustomTkinter
     app = LoginApp(root)
     root.mainloop()
 
