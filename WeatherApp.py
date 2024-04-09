@@ -14,10 +14,11 @@ class LoginApp:
         """
         self.root = root
         self.root.title("Weather App")
-        self.root.geometry("400x200")
+        self.root.geometry("800x400")
 
         self.center_window()
 
+        # create base info frame
         self.login_frame = customtkinter.CTkFrame(master=root, fg_color="transparent")
         self.login_frame.pack(pady=20)
 
@@ -34,6 +35,7 @@ class LoginApp:
         self.login_button = customtkinter.CTkButton(self.login_frame, text="Login", font=("Arial", 12), command=self.login)
         self.login_button.grid(row=2, columnspan=2, pady=10)
 
+        # set up register frame
         self.register_frame = customtkinter.CTkFrame(master=root, fg_color="transparent")
         self.register_frame.pack()
 
@@ -42,17 +44,51 @@ class LoginApp:
 
         self.user_credentials = self.load_credentials()
 
-        self.weather_frame = customtkinter.CTkFrame(root)
-        self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="WEATHER", font=("Arial", 20))
-        self.weather_label.pack(expand=True)
-
-        self.weather_button = customtkinter.CTkButton(self.weather_frame, text="Logout", font=("Arial", 12), command=self.logout)
-        self.weather_button.pack(pady=10)
-
-        self.account_settings_button = customtkinter.CTkButton(self.weather_frame, text="Account Settings", font=("Arial", 12), command=self.show_account_settings)
-        self.account_settings_button.pack(pady=10)
+        # create weather placeholder frame
+        self.weather_frame = None
 
         self.preferred_zipcode = None
+        self.current_username = None
+
+    def login(self):
+        """
+        This function is executed when the login button is clicked
+        """
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+
+        if username in self.user_credentials:
+            if self.user_credentials[username]["password"] == password:
+                self.current_username = username
+                self.preferred_zipcode = self.user_credentials[username].get("zipcode", None)
+                self.show_weather_page()
+                self.update_welcome_label()
+            else:
+                messagebox.showerror("Login Failed", "Incorrect password")
+        else:
+            messagebox.showerror("Login Failed", "Username not found")
+
+    def show_weather_page(self):
+        if self.weather_frame is None:
+            self.weather_frame = customtkinter.CTkFrame(self.root)
+            self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="WEATHER", font=("Arial", 20))
+            self.weather_label.pack(expand=True)
+
+            self.welcome_label = customtkinter.CTkLabel(self.weather_frame, text="", font=("Arial", 12))
+            self.welcome_label.pack()
+
+            self.weather_button = customtkinter.CTkButton(self.weather_frame, text="Logout", font=("Arial", 12), command=self.logout)
+            self.weather_button.pack(pady=10)
+
+            self.account_settings_button = customtkinter.CTkButton(self.weather_frame, text="Account Settings", font=("Arial", 12), command=self.show_account_settings)
+            self.account_settings_button.pack(pady=10)
+
+        # hide login frame
+        self.login_frame.pack_forget()
+        self.register_frame.pack_forget()
+
+        # show logged in weather frame
+        self.weather_frame.pack(fill=tk.BOTH, expand=True)
 
     def center_window(self):
         """
@@ -65,22 +101,6 @@ class LoginApp:
         y = (screen_height - self.root.winfo_reqheight()) / 2
 
         self.root.geometry("+%d+%d" % (x, y))
-
-    def login(self):
-        """
-        This function is executed when the login button is clicked
-        """
-        username = self.username_entry.get()
-        password = self.password_entry.get()
-
-        if username in self.user_credentials:
-            if self.user_credentials[username]["password"] == password:
-                self.preferred_zipcode = self.user_credentials[username].get("zipcode", None)
-                self.show_weather_page()
-            else:
-                messagebox.showerror("Login Failed", "Incorrect password")
-        else:
-            messagebox.showerror("Login Failed", "Username not found")
 
     def register(self):
         """
@@ -125,17 +145,6 @@ class LoginApp:
                 zipcode = data.get("zipcode", "")
                 file.write(f"{username}:{password}:{zipcode}\n")
 
-    def show_weather_page(self):
-        # hide login frame
-        self.login_frame.pack_forget()
-        self.register_frame.pack_forget()
-
-        # show logged in weather frame
-        self.weather_frame.pack(fill=tk.BOTH, expand=True)
-        if self.preferred_zipcode:
-            self.weather_zip_label = customtkinter.CTkLabel(self.weather_frame, text=f"Preferred Zipcode: {self.preferred_zipcode}", font=("Arial", 12))
-            self.weather_zip_label.pack(pady=5)
-
     def logout(self):
         # hide logged in frame
         self.weather_frame.pack_forget()
@@ -153,31 +162,37 @@ class LoginApp:
         self.account_settings_frame.pack(pady=20)
 
         label_title = customtkinter.CTkLabel(self.account_settings_frame, text="Account Settings", font=("Arial", 16))
-        label_title.pack(pady=10)
+        label_title.grid(row=0, columnspan=2, pady=10)
 
-        label_username = customtkinter.CTkLabel(self.account_settings_frame, text="New Username:")
-        label_username.pack()
+        label_username = customtkinter.CTkLabel(self.account_settings_frame, text="Username:")
+        label_username.grid(row=1, column=0, sticky="w", padx=10)
 
         entry_username = customtkinter.CTkEntry(self.account_settings_frame, font=("Arial", 12))
-        entry_username.pack()
+        entry_username.grid(row=1, column=1, padx=10)
+
+        if self.current_username:
+            entry_username.insert(0, self.current_username)
 
         label_password = customtkinter.CTkLabel(self.account_settings_frame, text="New Password:")
-        label_password.pack()
+        label_password.grid(row=2, column=0, sticky="w", padx=10)
 
         entry_password = customtkinter.CTkEntry(self.account_settings_frame, show="*", font=("Arial", 12))
-        entry_password.pack()
+        entry_password.grid(row=2, column=1, padx=10)
 
         label_confirm_password = customtkinter.CTkLabel(self.account_settings_frame, text="Confirm New Password:")
-        label_confirm_password.pack()
+        label_confirm_password.grid(row=3, column=0, sticky="w", padx=10)
 
         entry_confirm_password = customtkinter.CTkEntry(self.account_settings_frame, show="*", font=("Arial", 12))
-        entry_confirm_password.pack()
+        entry_confirm_password.grid(row=3, column=1, padx=10)
 
-        label_zipcode = customtkinter.CTkLabel(self.account_settings_frame, text="New Preferred Zipcode:")
-        label_zipcode.pack()
+        label_zipcode = customtkinter.CTkLabel(self.account_settings_frame, text="Preferred Zipcode:")
+        label_zipcode.grid(row=4, column=0, sticky="w", padx=10)
 
         entry_zipcode = customtkinter.CTkEntry(self.account_settings_frame, font=("Arial", 12))
-        entry_zipcode.pack()
+        entry_zipcode.grid(row=4, column=1, padx=10)
+
+        if self.preferred_zipcode:
+            entry_zipcode.insert(0, self.preferred_zipcode)
 
         btn_save_changes = customtkinter.CTkButton(self.account_settings_frame, text="Save Changes",
                                      command=lambda: self.save_account_changes(
@@ -186,28 +201,32 @@ class LoginApp:
                                          entry_confirm_password.get(),
                                          entry_zipcode.get()
                                      ))
-        btn_save_changes.pack(pady=10)
+        btn_save_changes.grid(row=5, columnspan=2, pady=10)
 
         btn_cancel = customtkinter.CTkButton(self.account_settings_frame, text="Cancel", command=self.cancel_account_settings)
-        btn_cancel.pack(pady=10)
+        btn_cancel.grid(row=6, columnspan=2, pady=10)
 
     def save_account_changes(self, new_username, new_password, confirm_password, new_zipcode):
-        current_username = self.username_entry.get()
-        current_password = self.password_entry.get()
-
         if new_username.strip() != "":
-            self.user_credentials[new_username] = {"password": current_password, "zipcode": new_zipcode}
-            del self.user_credentials[current_username]
+            if new_username != self.current_username:
+                self.user_credentials[new_username] = {"password": self.user_credentials[self.current_username]["password"], "zipcode": new_zipcode}
+                del self.user_credentials[self.current_username]
+                self.current_username = new_username
+            else:
+                self.user_credentials[self.current_username]["zipcode"] = new_zipcode
 
         if new_password.strip() != "":
             if new_password == confirm_password:
-                self.user_credentials[current_username]["password"] = new_password
+                self.user_credentials[self.current_username]["password"] = new_password
             else:
                 messagebox.showerror("Password Error", "Passwords do not match")
                 return
 
+        self.preferred_zipcode = new_zipcode
         self.save_credentials()
+        self.update_welcome_label()
         messagebox.showinfo("Changes Saved", "Account settings updated successfully")
+
 
     def cancel_account_settings(self):
         # hide account settings frame
@@ -215,6 +234,13 @@ class LoginApp:
 
         # show weather frame
         self.weather_frame.pack(fill=tk.BOTH, expand=True)
+
+    def update_welcome_label(self):
+        welcome_message = f"Welcome, {self.current_username}!"
+        if self.preferred_zipcode:
+            welcome_message += f" (Preferred Zip Code: {self.preferred_zipcode})"
+        self.welcome_label.configure(text=welcome_message)
+
 
 if __name__ == "__main__":
     root = customtkinter.CTk() #CustomTkinter
