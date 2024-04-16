@@ -49,6 +49,7 @@ class LoginApp:
 
         self.preferred_zipcode = None
         self.current_username = None
+        self.userid = 0
         
     def create_database_connection(self):
         self.conn = sqlite3.connect('users.db')
@@ -68,12 +69,13 @@ class LoginApp:
 
     def login(self):
         username = self.username_entry.get()
-        password = self.password_entry.get()
+        password = self.password_entry.get()        
 
         self.cursor.execute("SELECT * FROM Users WHERE Username = ? AND Password = ?", (username, password))
         user = self.cursor.fetchone()
 
         if user:
+            self.userid = user[0]
             self.current_username = user[1]
             self.preferred_zipcode = user[3]
             self.show_weather_page()
@@ -88,11 +90,22 @@ class LoginApp:
         if username.strip() == "" or password.strip() == "":
             messagebox.showerror("Registration Failed", "Username or password cannot be empty")
             return
-
+        
+        if not self.is_secure_password(password):
+            messagebox.showerror("Registration Failed", "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
+            return
+        
         try:
             self.cursor.execute("INSERT INTO Users (Username, Password) VALUES (?, ?)", (username, password))
             self.conn.commit()
             messagebox.showinfo("Registration Successful", "User registered successfully")
+            self.current_username = username
+            self.cursor.execute("SELECT * FROM Users WHERE Username = ? AND Password = ?", (username, password))
+            user = self.cursor.fetchone()
+            self.userid = user[0]
+
+            self.show_weather_page()
+            self.update_welcome_label()
         except sqlite3.IntegrityError:
             messagebox.showerror("Registration Failed", "Username already exists")
 
@@ -191,12 +204,12 @@ class LoginApp:
         btn_cancel = customtkinter.CTkButton(self.account_settings_frame, text="Cancel", command=self.cancel_account_settings)
         btn_cancel.grid(row=6, columnspan=2, pady=10)
         
-    def is_valid_zipcode(zipcode):
+    def is_valid_zipcode(self, zipcode):
         # 5 digits or 5 digits followed by a hyphen and 4 digits
         pattern = r'^\d{5}(?:-\d{4})?$'
         return bool(re.match(pattern, zipcode))
     
-    def is_secure_password(password):
+    def is_secure_password(self, password):
         if len(password) < 8:
             return False
 
@@ -214,48 +227,44 @@ class LoginApp:
 
         return True
     
-    def save_account_changes(self, new_username, new_password, confirm_password, new_zipcode):
-
-        if not is_valid_zipcode(new_zipcode):
-            messagebox.showerror("Zip Code Error", "Invalid zip code.")
-            return
+    def save_account_changes(self, new_username, new_password, confirm_password, new_zipcode):        
+        update_data = {}
 
         if new_password.strip() != "":
             if new_password == confirm_password:
                 # make sure the password reaches secure reqs
-                if not is_secure_password(new_password):
+                if not self.is_secure_password(new_password):
                     messagebox.showerror("Password Error", "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
                     return
+                else:
+                    self.cursor.execute("UPDATE Users SET Password = ? WHERE UserId = ?", (new_password, self.userid))
+                    self.conn.commit()
             else:
                 messagebox.showerror("Password Error", "Passwords do not match")
                 return
 
-        update_data = {}
         if new_username.strip() != "":
             if new_username != self.current_username:
                 update_data["Username"] = new_username
                 self.current_username = new_username
 
         if new_zipcode.strip() != "":
-            update_data["PreferredZip"] = new_zipcode
-            self.preferred_zipcode = new_zipcode
+            if not self.is_valid_zipcode(new_zipcode):
+                messagebox.showerror("Zip Code Error", "Invalid zip code.")
+                return
+            else:
+                update_data["PreferredZip"] = new_zipcode
+                self.preferred_zipcode = new_zipcode
 
         if update_data:
-            update_query = "UPDATE Users SET " + ", ".join(f"{key} = ?" for key in update_data.keys()) + " WHERE Username = ?"
-            update_values = tuple(update_data.values()) + (self.current_username,)
+            update_query = "UPDATE Users SET " + ", ".join(f"{key} = ?" for key in update_data.keys()) + " WHERE UserId = ?"
+            update_values = tuple(update_data.values()) + (self.userid,)
 
             self.cursor.execute(update_query, update_values)
-            self.conn.commit()
-
-        if new_password.strip() != "":
-            self.cursor.execute("UPDATE Users SET Password = ? WHERE Username = ?", (new_password, self.current_username))
-            self.conn.commit()
+            self.conn.commit()            
 
         self.update_welcome_label()
         messagebox.showinfo("Changes Saved", "Account settings updated successfully")
-
-
-
 
     def cancel_account_settings(self):
         # hide account settings frame
