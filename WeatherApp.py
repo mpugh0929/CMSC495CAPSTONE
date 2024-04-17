@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 import customtkinter
+import sqlite3
+import re
 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -9,14 +11,14 @@ class LoginApp:
     API_KEY = "129124b09cdff6292a9970660cd37091"
 
     def __init__(self, root):
-        """
-        This is the initialization function
-        """
         self.root = root
         self.root.title("Weather App")
         self.root.geometry("800x400")
 
         self.center_window()
+
+        self.create_database_connection()
+        self.create_table()
 
         # create base info frame
         self.login_frame = customtkinter.CTkFrame(master=root, fg_color="transparent")
@@ -42,31 +44,70 @@ class LoginApp:
         self.register_button = customtkinter.CTkButton(self.register_frame, text="Register", font=("Arial", 12), command=self.register)
         self.register_button.pack(pady=10)
 
-        self.user_credentials = self.load_credentials()
-
         # create weather placeholder frame
         self.weather_frame = None
 
         self.preferred_zipcode = None
         self.current_username = None
+        self.userid = 0
+        
+    def create_database_connection(self):
+        self.conn = sqlite3.connect('users.db')
+        self.cursor = self.conn.cursor()
+
+    def create_table(self):
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS Users (
+                UserId INTEGER PRIMARY KEY AUTOINCREMENT,
+                Username TEXT NOT NULL UNIQUE,
+                Password TEXT NOT NULL,
+                PreferredZip TEXT,
+                IsMember INTEGER DEFAULT 0
+            )
+        ''')
+        self.conn.commit()
 
     def login(self):
-        """
-        This function is executed when the login button is clicked
-        """
+        username = self.username_entry.get()
+        password = self.password_entry.get()        
+
+        self.cursor.execute("SELECT * FROM Users WHERE Username = ? AND Password = ?", (username, password))
+        user = self.cursor.fetchone()
+
+        if user:
+            self.userid = user[0]
+            self.current_username = user[1]
+            self.preferred_zipcode = user[3]
+            self.show_weather_page()
+            self.update_welcome_label()
+        else:
+            messagebox.showerror("Login Failed", "Incorrect username or password")
+
+    def register(self):
         username = self.username_entry.get()
         password = self.password_entry.get()
 
-        if username in self.user_credentials:
-            if self.user_credentials[username]["password"] == password:
-                self.current_username = username
-                self.preferred_zipcode = self.user_credentials[username].get("zipcode", None)
-                self.show_weather_page()
-                self.update_welcome_label()
-            else:
-                messagebox.showerror("Login Failed", "Incorrect password")
-        else:
-            messagebox.showerror("Login Failed", "Username not found")
+        if username.strip() == "" or password.strip() == "":
+            messagebox.showerror("Registration Failed", "Username or password cannot be empty")
+            return
+        
+        if not self.is_secure_password(password):
+            messagebox.showerror("Registration Failed", "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
+            return
+        
+        try:
+            self.cursor.execute("INSERT INTO Users (Username, Password) VALUES (?, ?)", (username, password))
+            self.conn.commit()
+            messagebox.showinfo("Registration Successful", "User registered successfully")
+            self.current_username = username
+            self.cursor.execute("SELECT * FROM Users WHERE Username = ? AND Password = ?", (username, password))
+            user = self.cursor.fetchone()
+            self.userid = user[0]
+
+            self.show_weather_page()
+            self.update_welcome_label()
+        except sqlite3.IntegrityError:
+            messagebox.showerror("Registration Failed", "Username already exists")
 
     def show_weather_page(self):
         if self.weather_frame is None:
@@ -100,50 +141,7 @@ class LoginApp:
         x = (screen_width - self.root.winfo_reqwidth()) / 2
         y = (screen_height - self.root.winfo_reqheight()) / 2
 
-        self.root.geometry("+%d+%d" % (x, y))
-
-    def register(self):
-        """
-        This function is executed when the register button is clicked
-        """
-        username = self.username_entry.get()
-        password = self.password_entry.get()
-
-        if username.strip() == "" or password.strip() == "":
-            messagebox.showerror("Registration Failed", "Username or password cannot be empty")
-        elif username in self.user_credentials:
-            messagebox.showerror("Registration Failed", "Username already exists")
-        else:
-            self.user_credentials[username] = {"password": password}
-            self.save_credentials()
-            messagebox.showinfo("Registration Successful", "User registered successfully")
-
-    def load_credentials(self):
-        """This function loads the credentials written to file
-
-        Returns:
-            dictionary: list of credentials, empty if cannot find file
-        """
-        try:
-            with open("user_credentials.txt", "r") as file:
-                lines = file.readlines()
-                credentials = {}
-                for line in lines:
-                    username, password, zipcode = line.strip().split(":")
-                    credentials[username] = {"password": password, "zipcode": zipcode}
-                return credentials
-        except FileNotFoundError:
-            return {}
-
-    def save_credentials(self):
-        """
-        This function saves the user entered credentials to file
-        """
-        with open("user_credentials.txt", "w") as file:
-            for username, data in self.user_credentials.items():
-                password = data["password"]
-                zipcode = data.get("zipcode", "")
-                file.write(f"{username}:{password}:{zipcode}\n")
+        self.root.geometry("+%d+%d" % (x, y))    
 
     def logout(self):
         # hide logged in frame
@@ -205,28 +203,68 @@ class LoginApp:
 
         btn_cancel = customtkinter.CTkButton(self.account_settings_frame, text="Cancel", command=self.cancel_account_settings)
         btn_cancel.grid(row=6, columnspan=2, pady=10)
+        
+    def is_valid_zipcode(self, zipcode):
+        # 5 digits or 5 digits followed by a hyphen and 4 digits
+        pattern = r'^\d{5}(?:-\d{4})?$'
+        return bool(re.match(pattern, zipcode))
+    
+    def is_secure_password(self, password):
+        if len(password) < 8:
+            return False
 
-    def save_account_changes(self, new_username, new_password, confirm_password, new_zipcode):
-        if new_username.strip() != "":
-            if new_username != self.current_username:
-                self.user_credentials[new_username] = {"password": self.user_credentials[self.current_username]["password"], "zipcode": new_zipcode}
-                del self.user_credentials[self.current_username]
-                self.current_username = new_username
-            else:
-                self.user_credentials[self.current_username]["zipcode"] = new_zipcode
+        if not re.search(r'[A-Z]', password):
+            return False
+
+        if not re.search(r'[a-z]', password):
+            return False
+
+        if not re.search(r'\d', password):
+            return False
+
+        if not re.search(r'[!@#$%^&*()-_=+{};:,<.>?\'"\\|~`]', password):
+            return False
+
+        return True
+    
+    def save_account_changes(self, new_username, new_password, confirm_password, new_zipcode):        
+        update_data = {}
 
         if new_password.strip() != "":
             if new_password == confirm_password:
-                self.user_credentials[self.current_username]["password"] = new_password
+                # make sure the password reaches secure reqs
+                if not self.is_secure_password(new_password):
+                    messagebox.showerror("Password Error", "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
+                    return
+                else:
+                    self.cursor.execute("UPDATE Users SET Password = ? WHERE UserId = ?", (new_password, self.userid))
+                    self.conn.commit()
             else:
                 messagebox.showerror("Password Error", "Passwords do not match")
                 return
 
-        self.preferred_zipcode = new_zipcode
-        self.save_credentials()
+        if new_username.strip() != "":
+            if new_username != self.current_username:
+                update_data["Username"] = new_username
+                self.current_username = new_username
+
+        if new_zipcode.strip() != "":
+            if not self.is_valid_zipcode(new_zipcode):
+                messagebox.showerror("Zip Code Error", "Invalid zip code.")
+                return
+            else:
+                update_data["PreferredZip"] = new_zipcode
+                self.preferred_zipcode = new_zipcode
+
+        if update_data:
+            update_query = "UPDATE Users SET " + ", ".join(f"{key} = ?" for key in update_data.keys()) + " WHERE UserId = ?"
+            update_values = tuple(update_data.values()) + (self.userid,)
+
+            self.cursor.execute(update_query, update_values)
+            self.conn.commit()            
+
         self.update_welcome_label()
         messagebox.showinfo("Changes Saved", "Account settings updated successfully")
-
 
     def cancel_account_settings(self):
         # hide account settings frame
