@@ -1,3 +1,4 @@
+import hashlib
 import tkinter as tk
 from tkinter import messagebox
 import customtkinter
@@ -9,7 +10,9 @@ customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "gr
 
 class LoginApp:
     API_KEY = "129124b09cdff6292a9970660cd37091"
-
+    MAX_LOGIN_ATTEMPTS = 5  # Maximum number of login attempts allowed
+    BLOCK_DURATION = 30 * 60  # Duration of block in seconds (30 minutes)
+    
     def __init__(self, root):
         self.root = root
         self.root.title("Weather App")
@@ -70,11 +73,12 @@ class LoginApp:
     def login(self):
         username = self.username_entry.get()
         password = self.password_entry.get()        
+        hashed_password = self.hash_password(password)
 
-        self.cursor.execute("SELECT * FROM Users WHERE Username = ? AND Password = ?", (username, password))
+        self.cursor.execute("SELECT * FROM Users WHERE Username = ?", (username))
         user = self.cursor.fetchone()
 
-        if user:
+        if user and user[2] == hashed_password:
             self.userid = user[0]
             self.current_username = user[1]
             self.preferred_zipcode = user[3]
@@ -94,13 +98,13 @@ class LoginApp:
         if not self.is_secure_password(password):
             messagebox.showerror("Registration Failed", "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
             return
-        
         try:
-            self.cursor.execute("INSERT INTO Users (Username, Password) VALUES (?, ?)", (username, password))
+            hashed_password = self.hash_password(password)
+            self.cursor.execute("INSERT INTO Users (Username, Password) VALUES (?, ?)", (username, hashed_password))
             self.conn.commit()
             messagebox.showinfo("Registration Successful", "User registered successfully")
             self.current_username = username
-            self.cursor.execute("SELECT * FROM Users WHERE Username = ? AND Password = ?", (username, password))
+            self.cursor.execute("SELECT * FROM Users WHERE Username = ?", (username))
             user = self.cursor.fetchone()
             self.userid = user[0]
 
@@ -279,6 +283,10 @@ class LoginApp:
             welcome_message += f" (Preferred Zip Code: {self.preferred_zipcode})"
         self.welcome_label.configure(text=welcome_message)
 
+    def hash_password(self, password):
+        # Hash the password using hashlib
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        return hashed_password
 
 if __name__ == "__main__":
     root = customtkinter.CTk() #CustomTkinter
