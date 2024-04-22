@@ -1,23 +1,26 @@
 import hashlib
+import time
 import tkinter as tk
 from tkinter import messagebox
 import customtkinter
 import sqlite3
 import re
 
+# setup custom tkinter 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "green", "dark-blue"
 
 class LoginApp:
     API_KEY = "129124b09cdff6292a9970660cd37091"
-    MAX_LOGIN_ATTEMPTS = 5  # Maximum number of login attempts allowed
-    BLOCK_DURATION = 30 * 60  # Duration of block in seconds (30 minutes)
-    
+    # max login attempts
+    MAX_LOGIN_ATTEMPTS = 5
+    # max duration to be blocked
+    BLOCK_DURATION = 30 * 60
+
     def __init__(self, root):
         self.root = root
         self.root.title("Weather App")
         self.root.geometry("800x400")
-
         self.center_window()
 
         self.create_database_connection()
@@ -53,6 +56,7 @@ class LoginApp:
         self.preferred_zipcode = None
         self.current_username = None
         self.userid = 0
+        self.failed_login_attempts = {}
         
     def create_database_connection(self):
         self.conn = sqlite3.connect('users.db')
@@ -72,20 +76,55 @@ class LoginApp:
 
     def login(self):
         username = self.username_entry.get()
-        password = self.password_entry.get()        
+        password = self.password_entry.get()
         hashed_password = self.hash_password(password)
 
-        self.cursor.execute("SELECT * FROM Users WHERE Username = ?", (username))
+        # check if the user is blocked
+        if username in self.failed_login_attempts and self.failed_login_attempts[username]["blocked"]:
+            if time.time() - self.failed_login_attempts[username]["timestamp"] < self.BLOCK_DURATION:
+                messagebox.showerror("Login Blocked", "You have exceeded the maximum number of login attempts. Please try again later.")
+                return
+
+        self.cursor.execute("SELECT * FROM Users WHERE Username = ?", (username,))
         user = self.cursor.fetchone()
 
-        if user and user[2] == hashed_password:
-            self.userid = user[0]
-            self.current_username = user[1]
-            self.preferred_zipcode = user[3]
-            self.show_weather_page()
-            self.update_welcome_label()
+        if user:
+            stored_hashed_password = user[2]
+            if stored_hashed_password == hashed_password:
+                self.reset_failed_attempts(username)
+                self.userid = user[0]
+                self.current_username = user[1]
+                self.preferred_zipcode = user[3]
+                self.show_weather_page()
+                self.update_welcome_label()
+            else:
+                self.handle_failed_login(username)
+                attemptsRemaining = self.MAX_LOGIN_ATTEMPTS - self.failed_login_attempts[username]["attempts"];
+                if not self.failed_login_attempts[username]["blocked"]:
+                    messagebox.showerror("Login Failed", f"Incorrect username or password. You have {attemptsRemaining} {'attempt' if attemptsRemaining == 1 else 'attempts'} remaining.")
         else:
-            messagebox.showerror("Login Failed", "Incorrect username or password")
+            messagebox.showerror("Login Failed", "User not found")
+
+    def handle_failed_login(self, username):
+        # increment failed login attempts for the user
+        if username in self.failed_login_attempts:
+            self.failed_login_attempts[username]["attempts"] += 1
+        else:
+            self.failed_login_attempts[username] = {"attempts": 1, "timestamp": time.time(), "blocked": False}
+
+        if self.failed_login_attempts[username]["attempts"] >= self.MAX_LOGIN_ATTEMPTS:
+            self.block_user(username)
+
+    def block_user(self, username):
+        # block the user from logging in for BLOCK_DURATION seconds
+        self.failed_login_attempts[username]["timestamp"] = time.time()
+        self.failed_login_attempts[username]["blocked"] = True
+        messagebox.showerror("Login Blocked", "You have exceeded the maximum number of login attempts. Please try again later.")
+
+    def reset_failed_attempts(self, username):
+        # reset failed login attempts for the user upon successful login
+        if username in self.failed_login_attempts:
+            del self.failed_login_attempts[username]
 
     def register(self):
         username = self.username_entry.get()
@@ -104,7 +143,7 @@ class LoginApp:
             self.conn.commit()
             messagebox.showinfo("Registration Successful", "User registered successfully")
             self.current_username = username
-            self.cursor.execute("SELECT * FROM Users WHERE Username = ?", (username))
+            self.cursor.execute("SELECT * FROM Users WHERE Username = ?", (username,))
             user = self.cursor.fetchone()
             self.userid = user[0]
 
@@ -284,7 +323,7 @@ class LoginApp:
         self.welcome_label.configure(text=welcome_message)
 
     def hash_password(self, password):
-        # Hash the password using hashlib
+        # hash the password using hashlib
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         return hashed_password
 
