@@ -5,6 +5,8 @@ from tkinter import messagebox
 import customtkinter
 import sqlite3
 import re
+import requests
+from uszipcode import SearchEngine
 
 # setup custom tkinter 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
@@ -155,25 +157,95 @@ class LoginApp:
     def show_weather_page(self):
         if self.weather_frame is None:
             self.weather_frame = customtkinter.CTkFrame(self.root)
+            self.weather_frame.pack(fill=tk.BOTH, expand=True)
             self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="WEATHER", font=("Arial", 20))
             self.weather_label.pack(expand=True)
 
             self.welcome_label = customtkinter.CTkLabel(self.weather_frame, text="", font=("Arial", 12))
             self.welcome_label.pack()
 
-            self.weather_button = customtkinter.CTkButton(self.weather_frame, text="Logout", font=("Arial", 12), command=self.logout)
-            self.weather_button.pack(pady=10)
+            self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame)
+            self.weather_search_frame.pack(pady=10)
+
+            self.zipcode_label = customtkinter.CTkLabel(self.weather_search_frame, text="Enter Zip Code:", font=("Arial", 12))
+            self.zipcode_label.grid(row=0, column=0, padx=5)
+
+            self.zipcode_entry = customtkinter.CTkEntry(self.weather_search_frame, font=("Arial", 12))
+            self.zipcode_entry.grid(row=0, column=1, padx=5)
+
+            self.search_button = customtkinter.CTkButton(self.weather_search_frame, text="Search", font=("Arial", 12), command=self.search_weather)
+            self.search_button.grid(row=0, column=2, padx=5)
+
+            self.weather_info_frame = customtkinter.CTkFrame(self.weather_frame)
+            self.weather_info_frame.pack(fill=tk.BOTH, expand=True)
+
+            self.weather_details_label = customtkinter.CTkLabel(self.weather_info_frame, text="", font=("Arial", 12))
+            self.weather_details_label.pack(pady=10)
+
+            self.weather_trend_button = customtkinter.CTkButton(self.weather_info_frame, text="Trend & Forecast", font=("Arial", 12), command=self.show_trend_and_forecast)
+            self.weather_trend_button.pack(pady=10)
 
             self.account_settings_button = customtkinter.CTkButton(self.weather_frame, text="Account Settings", font=("Arial", 12), command=self.show_account_settings)
             self.account_settings_button.pack(pady=10)
+
+            self.logout_button = customtkinter.CTkButton(self.weather_info_frame, text="Logout", font=("Arial", 12), command=self.logout)
+            self.logout_button.pack(pady=10)
 
         # hide login frame
         self.login_frame.pack_forget()
         self.register_frame.pack_forget()
 
-        # show logged in weather frame
-        self.weather_frame.pack(fill=tk.BOTH, expand=True)
+    def search_weather(self):
+        zipcode = self.zipcode_entry.get()
+        if not self.is_valid_zipcode(zipcode):
+            messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
+            return
 
+        cityData = self.get_lat_long_from_zip(zipcode)
+        if cityData is None:
+            messagebox.showerror("Error", "Could not find city information for the provided zip code.")
+            return
+        
+        lat = cityData[0]
+        long = cityData[1]
+        city = cityData[2]
+
+        weather_data = self.get_weather_response(lat, long)
+        if weather_data is None:
+            messagebox.showerror("Error", "Could not retrieve weather information.")
+            return
+
+        # Display weather information
+
+        description = weather_data['current']['weather'][0]['description']
+        temperature = weather_data['current']['temp']
+        feels_like = weather_data['current']['feels_like']
+        humidity = weather_data['current']['humidity']
+        wind_speed = weather_data['current']['wind_speed']
+        wind_direction_degrees = weather_data['current']['wind_speed']
+        wind_direction = self.degrees_to_cardinal(wind_direction_degrees)
+
+        weather_info = f"City: {city}\n"
+        weather_info += f"Weather: {description}\n"
+        weather_info += f"Temperature: {temperature}°F\n"
+        weather_info += f"Humidity: {humidity}%\n"
+        weather_info += f"Wind Speed: {wind_speed} mph, Direction: {wind_direction}°\n"
+
+        self.weather_label.configure(text=weather_info)
+
+    def show_trend_and_forecast(self):
+        zipcode = self.zipcode_entry.get()
+        if not self.is_valid_zipcode(zipcode):
+            messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
+            return
+
+        # Implement trend and forecast functionality here
+
+    def degrees_to_cardinal(self, degrees):
+        directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
+        index = round(degrees / 45) % 8
+        return directions[index]
+    
     def center_window(self):
         """
         This function centers the gui on start
@@ -326,6 +398,33 @@ class LoginApp:
         # hash the password using hashlib
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         return hashed_password
+    
+    def get_lat_long_from_zip(self, zip_code):
+        """
+        Get latitude and longitude from a given zip code using the uszipcode library.
+        
+        Args:
+        - zip_code (str): The zip code for which latitude and longitude are needed.
+        
+        Returns:
+        - tuple: A tuple containing latitude and longitude (lat, lng).
+        """
+        search = SearchEngine()
+        result = search.by_zipcode(zip_code)
+        if result:
+            return [result.lat, result.lng, result.city]
+        else:
+            messagebox.showerror("Search Error", f"Unable to retrieve data for the given zip code. Please try a different zip code.")
+
+    def get_weather_response(self, lat, long):
+        endpointURL = f"https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={long}&appid={self.API_KEY}&units=imperial"
+        
+        response = requests.get(endpointURL)
+        
+        if response.status_code == 200:
+            return response.json()
+        
+        messagebox.showerror("Search Error", f"Failed to retrieve data. Status code: {response.status_code}")
 
 if __name__ == "__main__":
     root = customtkinter.CTk() #CustomTkinter
