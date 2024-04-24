@@ -13,7 +13,6 @@ customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark",
 customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "green", "dark-blue"
 
 class LoginApp:
-    # API key for the weather API
     API_KEY = "129124b09cdff6292a9970660cd37091"
     # max login attempts
     MAX_LOGIN_ATTEMPTS = 5
@@ -21,16 +20,11 @@ class LoginApp:
     BLOCK_DURATION = 30 * 60
 
     def __init__(self, root):
-        """
-        This function initalizes the app
-        """
-        # start up app
         self.root = root
         self.root.title("Weather App")
         self.root.geometry("800x400")
         self.center_window()
 
-        # begin DB connection
         self.create_database_connection()
         self.create_table()
 
@@ -65,18 +59,12 @@ class LoginApp:
         self.current_username = None
         self.userid = 0
         self.failed_login_attempts = {}
-
+        
     def create_database_connection(self):
-        """
-        This function connects to SQLite db
-        """
         self.conn = sqlite3.connect('users.db')
         self.cursor = self.conn.cursor()
 
     def create_table(self):
-        """
-        This function creates the Users table upon app start if it does not exist
-        """
         self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS Users (
                 UserId INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -89,38 +77,29 @@ class LoginApp:
         self.conn.commit()
 
     def login(self):
-        """
-        This function is the login authentication method
-        """
         username = self.username_entry.get()
         password = self.password_entry.get()
-        # hash the password
         hashed_password = self.hash_password(password)
 
         # check if the user is blocked
         if username in self.failed_login_attempts and self.failed_login_attempts[username]["blocked"]:
-            # if theyre blocked, check the timestamp on their user vs the timeout
             if time.time() - self.failed_login_attempts[username]["timestamp"] < self.BLOCK_DURATION:
                 messagebox.showerror("Login Blocked", "You have exceeded the maximum number of login attempts. Please try again later.")
                 return
 
-        # query for the user
         self.cursor.execute("SELECT * FROM Users WHERE Username = ?", (username,))
         user = self.cursor.fetchone()
 
-        # if the user exists, then compare the hashed password vs the one in the db
         if user:
             stored_hashed_password = user[2]
             if stored_hashed_password == hashed_password:
                 self.reset_failed_attempts(username)
                 self.userid = user[0]
-                # set session variables, boot up the weather page
                 self.current_username = user[1]
                 self.preferred_zipcode = user[3]
                 self.show_weather_page()
                 self.update_welcome_label()
             else:
-                # handle an unsuccessful login, toll attempts
                 self.handle_failed_login(username)
                 attemptsRemaining = self.MAX_LOGIN_ATTEMPTS - self.failed_login_attempts[username]["attempts"];
                 if not self.failed_login_attempts[username]["blocked"]:
@@ -129,12 +108,6 @@ class LoginApp:
             messagebox.showerror("Login Failed", "User not found")
 
     def handle_failed_login(self, username):
-        """
-        This function handles an unsuccessful login by tolling the attempts for the user and blocking them if necessary
-
-        Args:
-            username (string): the username attempted
-        """
         # increment failed login attempts for the user
         if username in self.failed_login_attempts:
             self.failed_login_attempts[username]["attempts"] += 1
@@ -145,44 +118,28 @@ class LoginApp:
             self.block_user(username)
 
     def block_user(self, username):
-        """Blocks the user from logging in for BLOCK_DURATION seconds
-
-        Args:
-            username (string): the username blocked
-        """
+        # block the user from logging in for BLOCK_DURATION seconds
         self.failed_login_attempts[username]["timestamp"] = time.time()
         self.failed_login_attempts[username]["blocked"] = True
         messagebox.showerror("Login Blocked", "You have exceeded the maximum number of login attempts. Please try again later.")
 
     def reset_failed_attempts(self, username):
-        """
-        This function resets the failed attempts for the user upon successful login
-
-        Args:
-            username (string): the username that needs their attempts reset
-        """
         # reset failed login attempts for the user upon successful login
         if username in self.failed_login_attempts:
             del self.failed_login_attempts[username]
 
     def register(self):
-        """
-        This function is for registration 
-        """
         username = self.username_entry.get()
         password = self.password_entry.get()
 
-        # make sure fields are not empty
         if username.strip() == "" or password.strip() == "":
             messagebox.showerror("Registration Failed", "Username or password cannot be empty")
             return
         
-        # ensure the password is secure
         if not self.is_secure_password(password):
             messagebox.showerror("Registration Failed", "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
             return
         try:
-            # hash the password and store it in the DB
             hashed_password = self.hash_password(password)
             self.cursor.execute("INSERT INTO Users (Username, Password) VALUES (?, ?)", (username, hashed_password))
             self.conn.commit()
@@ -192,16 +149,12 @@ class LoginApp:
             user = self.cursor.fetchone()
             self.userid = user[0]
 
-            # show authenticated view
             self.show_weather_page()
             self.update_welcome_label()
         except sqlite3.IntegrityError:
             messagebox.showerror("Registration Failed", "Username already exists")
 
     def show_weather_page(self):
-        """
-        This function loads the tkinter logic for the weather page
-        """
         if self.weather_frame is None:
             self.weather_frame = customtkinter.CTkFrame(self.root)
             self.weather_frame.pack(fill=tk.BOTH, expand=True)
@@ -243,16 +196,11 @@ class LoginApp:
         self.register_frame.pack_forget()
 
     def search_weather(self):
-        """
-        This function searches for the weather in a location and displays it
-        """
         zipcode = self.zipcode_entry.get()
-        # ensure the zip code is valid
         if not self.is_valid_zipcode(zipcode):
             messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
             return
 
-        # get the lat/long from zip so we can query the API
         cityData = self.get_lat_long_from_zip(zipcode)
         if cityData is None:
             messagebox.showerror("Error", "Could not find city information for the provided zip code.")
@@ -262,13 +210,13 @@ class LoginApp:
         long = cityData[1]
         city = cityData[2]
 
-        # query the API
         weather_data = self.get_weather_response(lat, long)
         if weather_data is None:
             messagebox.showerror("Error", "Could not retrieve weather information.")
             return
 
-        # display results from the API
+        # Display weather information
+
         description = weather_data['current']['weather'][0]['description']
         temperature = weather_data['current']['temp']
         feels_like = weather_data['current']['feels_like']
@@ -277,7 +225,6 @@ class LoginApp:
         wind_direction_degrees = weather_data['current']['wind_speed']
         wind_direction = self.degrees_to_cardinal(wind_direction_degrees)
 
-        # create weather label text
         weather_info = f"City: {city}\n"
         weather_info += f"Weather: {description}\n"
         weather_info += f"Temperature: {temperature}°F\n"
@@ -287,9 +234,6 @@ class LoginApp:
         self.weather_label.configure(text=weather_info)
 
     def show_trend_and_forecast(self):
-        """
-        TODO: implement this method
-        """
         zipcode = self.zipcode_entry.get()
         if not self.is_valid_zipcode(zipcode):
             messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
@@ -298,15 +242,6 @@ class LoginApp:
         # Implement trend and forecast functionality here
 
     def degrees_to_cardinal(self, degrees):
-        """
-        This function changes degrees to cardinal direction
-
-        Args:
-            degrees (int): degrees of direction, ex. 170
-
-        Returns:
-            string: cardinal direction matched to the degree value
-        """
         directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
         index = round(degrees / 45) % 8
         return directions[index]
@@ -324,22 +259,14 @@ class LoginApp:
         self.root.geometry("+%d+%d" % (x, y))    
 
     def logout(self):
-        """
-        This function logs the user out
-        """
         # hide logged in frame
         self.weather_frame.pack_forget()
-
-        # TODO: reset session variables below
 
         # show reg frame
         self.login_frame.pack()
         self.register_frame.pack()
 
     def show_account_settings(self):
-        """
-        This function shows the tkinter for the account settings form
-        """
         # hide weather frame
         self.weather_frame.pack_forget()
 
@@ -356,7 +283,6 @@ class LoginApp:
         entry_username = customtkinter.CTkEntry(self.account_settings_frame, font=("Arial", 12))
         entry_username.grid(row=1, column=1, padx=10)
 
-        # prefill information
         if self.current_username:
             entry_username.insert(0, self.current_username)
 
@@ -394,35 +320,11 @@ class LoginApp:
         btn_cancel.grid(row=6, columnspan=2, pady=10)
         
     def is_valid_zipcode(self, zipcode):
-        """
-        This function checks if the provided zip code is valid with REGEX
-
-        Args:
-            zipcode (int): the provided zip code
-
-        Returns:
-            bool: True if valid, False if not
-        """
         # 5 digits or 5 digits followed by a hyphen and 4 digits
         pattern = r'^\d{5}(?:-\d{4})?$'
         return bool(re.match(pattern, zipcode))
     
     def is_secure_password(self, password):
-        """
-        This function checks if the provided password is secure. 
-        They must be:
-         - 8 or more chars in length
-         - contain 1 uppercase letter
-         - contain 1 lowercase letter
-         - contain 1 number
-         - contain 1 symbol
-
-        Args:
-            password (string): the provided password
-
-        Returns:
-            bool: True if secure, False if not
-        """
         if len(password) < 8:
             return False
 
@@ -440,16 +342,7 @@ class LoginApp:
 
         return True
     
-    def save_account_changes(self, new_username, new_password, confirm_password, new_zipcode):
-        """
-        This function saves the changes made in the account settings form
-
-        Args:
-            new_username (string): username provided in the form
-            new_password (string): new password provided in the form
-            confirm_password (string): second password field to ensure user knows it
-            new_zipcode (int): zip code provided in the form
-        """
+    def save_account_changes(self, new_username, new_password, confirm_password, new_zipcode):        
         update_data = {}
 
         if new_password.strip() != "":
@@ -459,9 +352,7 @@ class LoginApp:
                     messagebox.showerror("Password Error", "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
                     return
                 else:
-                    # hash password for security
-                    new_hashed_password = self.hash_password(new_password)
-                    self.cursor.execute("UPDATE Users SET Password = ? WHERE UserId = ?", (new_hashed_password, self.userid))
+                    self.cursor.execute("UPDATE Users SET Password = ? WHERE UserId = ?", (new_password, self.userid))
                     self.conn.commit()
             else:
                 messagebox.showerror("Password Error", "Passwords do not match")
@@ -480,7 +371,6 @@ class LoginApp:
                 update_data["PreferredZip"] = new_zipcode
                 self.preferred_zipcode = new_zipcode
 
-        # update fields filled by the user
         if update_data:
             update_query = "UPDATE Users SET " + ", ".join(f"{key} = ?" for key in update_data.keys()) + " WHERE UserId = ?"
             update_values = tuple(update_data.values()) + (self.userid,)
@@ -488,14 +378,10 @@ class LoginApp:
             self.cursor.execute(update_query, update_values)
             self.conn.commit()            
 
-        # update welcome label with new user info
         self.update_welcome_label()
         messagebox.showinfo("Changes Saved", "Account settings updated successfully")
 
     def cancel_account_settings(self):
-        """
-        This function sends the user back to the main page
-        """
         # hide account settings frame
         self.account_settings_frame.pack_forget()
 
@@ -503,24 +389,12 @@ class LoginApp:
         self.weather_frame.pack(fill=tk.BOTH, expand=True)
 
     def update_welcome_label(self):
-        """
-        This function updates the welcome label with username and zip code information
-        """
         welcome_message = f"Welcome, {self.current_username}!"
         if self.preferred_zipcode:
             welcome_message += f" (Preferred Zip Code: {self.preferred_zipcode})"
         self.welcome_label.configure(text=welcome_message)
 
     def hash_password(self, password):
-        """
-        This function hashes passwords with SHA256
-
-        Args:
-            password (string): the provided password
-
-        Returns:
-            string: hashed password result
-        """
         # hash the password using hashlib
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         return hashed_password
@@ -533,7 +407,7 @@ class LoginApp:
         - zip_code (str): The zip code for which latitude and longitude are needed.
         
         Returns:
-        - list: A list containing the lat, long, and city name
+        - tuple: A tuple containing latitude and longitude (lat, lng).
         """
         search = SearchEngine()
         result = search.by_zipcode(zip_code)
@@ -543,17 +417,6 @@ class LoginApp:
             messagebox.showerror("Search Error", f"Unable to retrieve data for the given zip code. Please try a different zip code.")
 
     def get_weather_response(self, lat, long):
-        """
-        This function queries the weather API and returns the response JSON
-
-        Args:
-            lat (float): latitude value
-            long (float): longitude value
-
-        Returns:
-            dictionary: JSON response from API
-        """
-        # set up GET request
         endpointURL = f"https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={long}&appid={self.API_KEY}&units=imperial"
         
         response = requests.get(endpointURL)
@@ -563,7 +426,6 @@ class LoginApp:
         
         messagebox.showerror("Search Error", f"Failed to retrieve data. Status code: {response.status_code}")
 
-# this kicks off the app
 if __name__ == "__main__":
     root = customtkinter.CTk() #CustomTkinter
     app = LoginApp(root)
