@@ -7,6 +7,7 @@ import sqlite3
 import re
 import requests
 from uszipcode import SearchEngine
+import tkintermapview
 
 # setup custom tkinter 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
@@ -211,7 +212,7 @@ class LoginApp:
             self.welcome_label = customtkinter.CTkLabel(self.weather_frame, text="", font=("Arial", 12))
             self.welcome_label.pack()
 
-            self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame)
+            self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
             self.weather_search_frame.pack(pady=10)
 
             self.zipcode_label = customtkinter.CTkLabel(self.weather_search_frame, text="Enter Zip Code:", font=("Arial", 12))
@@ -223,7 +224,7 @@ class LoginApp:
             self.search_button = customtkinter.CTkButton(self.weather_search_frame, text="Search", font=("Arial", 12), command=self.search_weather)
             self.search_button.grid(row=0, column=2, padx=5)
 
-            self.weather_info_frame = customtkinter.CTkFrame(self.weather_frame)
+            self.weather_info_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
             self.weather_info_frame.pack(fill=tk.BOTH, expand=True)
 
             self.weather_details_label = customtkinter.CTkLabel(self.weather_info_frame, text="", font=("Arial", 12))
@@ -237,6 +238,8 @@ class LoginApp:
 
             self.logout_button = customtkinter.CTkButton(self.weather_info_frame, text="Logout", font=("Arial", 12), command=self.logout)
             self.logout_button.pack(pady=10)
+
+
 
         # hide login frame
         self.login_frame.pack_forget()
@@ -285,6 +288,13 @@ class LoginApp:
         weather_info += f"Wind Speed: {wind_speed} mph, Direction: {wind_direction}°\n"
 
         self.weather_label.configure(text=weather_info)
+
+        # Create map after zipcode input and place marker with description (could use icons from api) 
+        map_widget = tkintermapview.TkinterMapView(self.weather_frame, width=280, height=175, corner_radius=5)
+        map_widget.place(relx=.8, rely=0.77, anchor=customtkinter.CENTER)
+        map_widget.set_position(lat, long)
+        map_widget.set_zoom(12)
+        marker_1 = map_widget.set_marker(lat, long, text=f"{description}")
 
     def show_trend_and_forecast(self):
         """
