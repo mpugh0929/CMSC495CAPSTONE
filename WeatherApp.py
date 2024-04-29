@@ -36,37 +36,53 @@ class LoginApp:
         self.create_database_connection()
         self.create_table()
 
-        # create base info frame
-        self.login_frame = customtkinter.CTkFrame(master=root, fg_color="transparent")
-        self.login_frame.pack(pady=20)
+        self.show_login_page()
 
-        self.username_label = customtkinter.CTkLabel(self.login_frame, text="Username:", font=("Arial", 12))
-        self.username_label.grid(row=0, column=0, sticky="w")
-        self.username_entry = customtkinter.CTkEntry(self.login_frame, font=("Arial", 12))
-        self.username_entry.grid(row=0, column=1, padx=10)
-
-        self.password_label = customtkinter.CTkLabel(self.login_frame, text="Password:", font=("Arial", 12))
-        self.password_label.grid(row=1, column=0, sticky="w")
-        self.password_entry = customtkinter.CTkEntry(self.login_frame, show="*", font=("Arial", 12))
-        self.password_entry.grid(row=1, column=1, padx=10)
-
-        self.login_button = customtkinter.CTkButton(self.login_frame, text="Login", font=("Arial", 12), command=self.login)
-        self.login_button.grid(row=2, columnspan=2, pady=10)
-
-        # set up register frame
-        self.register_frame = customtkinter.CTkFrame(master=root, fg_color="transparent")
-        self.register_frame.pack()
-
-        self.register_button = customtkinter.CTkButton(self.register_frame, text="Register", font=("Arial", 12), command=self.register)
-        self.register_button.pack(pady=10)
-
-        # create weather placeholder frame
+        # init weather frame
         self.weather_frame = None
 
+        # init session variables
         self.preferred_zipcode = None
         self.current_username = None
         self.userid = 0
         self.failed_login_attempts = {}
+
+    def show_login_page(self):
+        """
+        This function creates the login frame
+        """
+        self.login_frame = customtkinter.CTkFrame(self.root)
+        self.login_frame.pack(fill=tk.BOTH, expand=True)
+
+        title_label = customtkinter.CTkLabel(self.login_frame, text="Welcome to the Weather App!", font=("Arial", 20))
+        title_label.pack(pady=10)
+        
+        subheading_label = customtkinter.CTkLabel(self.login_frame, text="Log-in or Register to Get Started!", font=("Arial", 12))
+        subheading_label.pack()
+
+        entry_frame = customtkinter.CTkFrame(self.login_frame, fg_color="transparent")
+        entry_frame.pack(pady=10)
+
+        username_label = customtkinter.CTkLabel(entry_frame, text="Username:", font=("Arial", 12))
+        username_label.grid(row=0, column=0, padx=5, pady=5)
+
+        self.username_entry = customtkinter.CTkEntry(entry_frame, font=("Arial", 12))
+        self.username_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        password_label = customtkinter.CTkLabel(entry_frame, text="Password:", font=("Arial", 12))
+        password_label.grid(row=1, column=0, padx=5, pady=5)
+
+        self.password_entry = customtkinter.CTkEntry(entry_frame, show="*", font=("Arial", 12))
+        self.password_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        button_frame = customtkinter.CTkFrame(self.login_frame)
+        button_frame.pack(pady=10)
+
+        login_button = customtkinter.CTkButton(button_frame, text="Login", font=("Arial", 12), command=self.login)
+        login_button.grid(row=0, column=0, padx=5)
+
+        register_button = customtkinter.CTkButton(button_frame, text="Register", font=("Arial", 12), command=self.register)
+        register_button.grid(row=0, column=1, padx=5)
 
     def create_database_connection(self):
         """
@@ -209,11 +225,11 @@ class LoginApp:
             self.top_nav_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
             self.top_nav_frame.pack(fill=tk.X, pady=10)
 
-            self.account_settings_button = customtkinter.CTkButton(self.top_nav_frame, text="Account Settings", font=("Arial", 12), command=self.show_account_settings)
-            self.account_settings_button.pack(side=tk.LEFT, padx=10)
-
             self.logout_button = customtkinter.CTkButton(self.top_nav_frame, text="Logout", font=("Arial", 12), command=self.logout)
             self.logout_button.pack(side=tk.RIGHT, padx=10)
+
+            self.account_settings_button = customtkinter.CTkButton(self.top_nav_frame, text="Account Settings", font=("Arial", 12), command=self.show_account_settings)
+            self.account_settings_button.pack(side=tk.LEFT, padx=10)            
 
             self.weather_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
             self.weather_frame.pack(fill=tk.BOTH, expand=True)
@@ -245,8 +261,14 @@ class LoginApp:
             self.weather_details_label = customtkinter.CTkLabel(self.weather_info_frame, text="", font=("Arial", 12))
             self.weather_details_label.pack(pady=10)
 
+            self.map_frame = customtkinter.CTkFrame(self.weather_frame)
+            self.map_frame.pack(pady=10)
+            
             if self.preferred_zipcode:
                 self.search_weather(True)
+            else:
+                default_results = self.get_lat_long_from_zip(10001)
+                self.show_map(default_results[0], default_results[1], "Start your search!")
 
         # hide login frame
         self.login_frame.pack_forget()
@@ -299,10 +321,21 @@ class LoginApp:
         weather_info += f"Wind Speed: {wind_speed} mph, Direction: {wind_direction}°\n"
 
         self.weather_label.configure(text=weather_info)
+        self.show_map(lat, long, description)
+        self.weather_frame.update_idletasks()
 
-        # Create map after zipcode input and place marker with description (could use icons from api) 
-        map_widget = tkintermapview.TkinterMapView(self.weather_frame, width=280, height=175, corner_radius=5)
-        map_widget.place(relx=.8, rely=0.77, anchor=customtkinter.CENTER)
+
+    def show_map(self, lat, long, description):
+        """TODO: DOCSTRING
+
+        Args:
+            lat (_type_): _description_
+            long (_type_): _description_
+            description (_type_): _description_
+        """
+        map_widget = tkintermapview.TkinterMapView(self.map_frame, width=280, height=175, corner_radius=5)
+        map_widget.pack(fill=tk.BOTH, expand=True) 
+
         map_widget.set_position(lat, long)
         map_widget.set_zoom(12)
         marker_1 = map_widget.set_marker(lat, long, text=f"{description}")
@@ -340,8 +373,11 @@ class LoginApp:
         weather_info = f"{city}\n"
         weather_info += f"One Day Prediction: {one_day_avg}\n"
         weather_info += f"Five Day Average: {five_day_avg}°F\n"
+        description = weather_data['current']['weather'][0]['description']
 
         self.weather_label.configure(text=weather_info)
+        self.show_map(lat, long, description)
+        self.weather_frame.update_idletasks()
 
     def trend_calculations(self, data):
         """
