@@ -233,7 +233,7 @@ class LoginApp:
 
             self.weather_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
             self.weather_frame.pack(fill=tk.BOTH, expand=True)
-            self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="Start your search below!", font=("Arial", 20))
+            self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="Start Your Search Below!", font=("Arial", 20))
             self.weather_label.pack(expand=True)
 
             self.welcome_label = customtkinter.CTkLabel(self.weather_frame, text="", font=("Arial", 12))
@@ -326,12 +326,12 @@ class LoginApp:
 
 
     def show_map(self, lat, long, description):
-        """TODO: DOCSTRING
+        """This function shows the map of the queried location
 
         Args:
-            lat (_type_): _description_
-            long (_type_): _description_
-            description (_type_): _description_
+            lat (float): latitude of the queried location
+            long (float): longitude of the queried location
+            description (string): text to display on the map
         """
         map_widget = tkintermapview.TkinterMapView(self.map_frame, width=280, height=175, corner_radius=5)
         map_widget.pack(fill=tk.BOTH, expand=True) 
@@ -342,7 +342,7 @@ class LoginApp:
 
     def show_trend_and_forecast(self):
         """
-        TODO: implement this method
+        This function loads the forecast into the weather label
         """
         # just update the weather info label
         zipcode = self.zipcode_entry.get()
@@ -381,7 +381,7 @@ class LoginApp:
 
     def trend_calculations(self, data):
         """
-        Calculates the 1 day prediction using a 24-hour average and a 5-day prediction using a 5-day average
+        Calculates the 1-day prediction using a 24-hour average and a 5-day prediction using a 5-day average
 
         Args:
             data (dictionary): JSON API response
@@ -432,7 +432,10 @@ class LoginApp:
         # hide logged in frame
         self.weather_frame.pack_forget()
 
-        # TODO: reset session variables below
+        # reset session variables
+        self.preferred_zipcode = None
+        self.current_username = None
+        self.userid = 0
 
         # show reg frame
         self.login_frame.pack()
