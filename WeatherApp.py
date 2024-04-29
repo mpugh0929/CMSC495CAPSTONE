@@ -1,3 +1,4 @@
+from datetime import datetime
 import hashlib
 import time
 import tkinter as tk
@@ -203,15 +204,26 @@ class LoginApp:
         This function loads the tkinter logic for the weather page
         """
         if self.weather_frame is None:
-            self.weather_frame = customtkinter.CTkFrame(self.root)
+            # Top navigation bar
+            self.top_nav_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
+            self.top_nav_frame.pack(fill=tk.X, pady=10)
+
+            self.account_settings_button = customtkinter.CTkButton(self.top_nav_frame, text="Account Settings", font=("Arial", 12), command=self.show_account_settings)
+            self.account_settings_button.pack(side=tk.LEFT, padx=10)
+
+            self.logout_button = customtkinter.CTkButton(self.top_nav_frame, text="Logout", font=("Arial", 12), command=self.logout)
+            self.logout_button.pack(side=tk.RIGHT, padx=10)
+
+            self.weather_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
             self.weather_frame.pack(fill=tk.BOTH, expand=True)
-            self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="WEATHER", font=("Arial", 20))
+            self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="Start your search below!", font=("Arial", 20))
             self.weather_label.pack(expand=True)
 
             self.welcome_label = customtkinter.CTkLabel(self.weather_frame, text="", font=("Arial", 12))
-            self.welcome_label.pack()
+            self.welcome_label.pack()            
 
-            self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame)
+            # Weather search bar
+            self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
             self.weather_search_frame.pack(pady=10)
 
             self.zipcode_label = customtkinter.CTkLabel(self.weather_search_frame, text="Enter Zip Code:", font=("Arial", 12))
@@ -220,33 +232,34 @@ class LoginApp:
             self.zipcode_entry = customtkinter.CTkEntry(self.weather_search_frame, font=("Arial", 12))
             self.zipcode_entry.grid(row=0, column=1, padx=5)
 
-            self.search_button = customtkinter.CTkButton(self.weather_search_frame, text="Search", font=("Arial", 12), command=self.search_weather)
+            self.search_button = customtkinter.CTkButton(self.weather_search_frame, text="Current Weather", font=("Arial", 12), command=self.search_weather)
             self.search_button.grid(row=0, column=2, padx=5)
+            self.weather_trend_button = customtkinter.CTkButton(self.weather_search_frame, text="Trend & Forecast", font=("Arial", 12), command=self.show_trend_and_forecast)
+            self.weather_trend_button.grid(row=0, column=3, padx=5)
 
-            self.weather_info_frame = customtkinter.CTkFrame(self.weather_frame)
+            # Weather details and buttons
+            self.weather_info_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
             self.weather_info_frame.pack(fill=tk.BOTH, expand=True)
 
             self.weather_details_label = customtkinter.CTkLabel(self.weather_info_frame, text="", font=("Arial", 12))
             self.weather_details_label.pack(pady=10)
 
-            self.weather_trend_button = customtkinter.CTkButton(self.weather_info_frame, text="Trend & Forecast", font=("Arial", 12), command=self.show_trend_and_forecast)
-            self.weather_trend_button.pack(pady=10)
-
-            self.account_settings_button = customtkinter.CTkButton(self.weather_frame, text="Account Settings", font=("Arial", 12), command=self.show_account_settings)
-            self.account_settings_button.pack(pady=10)
-
-            self.logout_button = customtkinter.CTkButton(self.weather_info_frame, text="Logout", font=("Arial", 12), command=self.logout)
-            self.logout_button.pack(pady=10)
+            if self.preferred_zipcode:
+                self.search_weather(True)
 
         # hide login frame
         self.login_frame.pack_forget()
         self.register_frame.pack_forget()
 
-    def search_weather(self):
+
+    def search_weather(self, usePreferredZip = False):
         """
         This function searches for the weather in a location and displays it
         """
         zipcode = self.zipcode_entry.get()
+        if usePreferredZip:
+            zipcode = self.preferred_zipcode
+
         # ensure the zip code is valid
         if not self.is_valid_zipcode(zipcode):
             messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
@@ -278,7 +291,7 @@ class LoginApp:
         wind_direction = self.degrees_to_cardinal(wind_direction_degrees)
 
         # create weather label text
-        weather_info = f"City: {city}\n"
+        weather_info = f"{city}\n"
         weather_info += f"Weather: {description}\n"
         weather_info += f"Temperature: {temperature}°F\n"
         weather_info += f"Humidity: {humidity}%\n"
@@ -290,12 +303,57 @@ class LoginApp:
         """
         TODO: implement this method
         """
+        # just update the weather info label
         zipcode = self.zipcode_entry.get()
         if not self.is_valid_zipcode(zipcode):
             messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
             return
+        
+        cityData = self.get_lat_long_from_zip(zipcode)
+        if cityData is None:
+            messagebox.showerror("Error", "Could not find city information for the provided zip code.")
+            return
+        
+        lat = cityData[0]
+        long = cityData[1]
+        city = cityData[2]
 
+        # query the API
+        weather_data = self.get_weather_response(lat, long)
+        if weather_data is None:
+            messagebox.showerror("Error", "Could not retrieve weather information.")
+            return
+
+        # display results from the API
         # Implement trend and forecast functionality here
+        one_day_avg, five_day_avg = self.trend_calculations(weather_data)
+
+        # create weather label text
+        weather_info = f"{city}\n"
+        weather_info += f"One Day Prediction: {one_day_avg}\n"
+        weather_info += f"Five Day Average: {five_day_avg}°F\n"
+
+        self.weather_label.configure(text=weather_info)
+
+    def trend_calculations(self, data):
+        """
+        Calculates the 1 day prediction using a 24-hour average and a 5-day prediction using a 5-day average
+
+        Args:
+            data (dictionary): JSON API response
+
+        Returns:
+            tuple (float, float): one day average, 5 day average
+        """
+        # 1 day avg
+        hourly_temperatures = [hour["temp"] for hour in data["hourly"][:24]]
+        one_day_average = sum(hourly_temperatures) / len(hourly_temperatures)
+
+        # 5 day avg
+        daily_temperatures = [day["temp"]["day"] for day in data["daily"][:5]]
+        five_day_average = sum(daily_temperatures) / len(daily_temperatures)       
+
+        return one_day_average, five_day_average
 
     def degrees_to_cardinal(self, degrees):
         """
@@ -344,7 +402,7 @@ class LoginApp:
         self.weather_frame.pack_forget()
 
         # show account settings frame
-        self.account_settings_frame = customtkinter.CTkFrame(master=self.root)
+        self.account_settings_frame = customtkinter.CTkFrame(master=self.root, fg_color="transparent")
         self.account_settings_frame.pack(pady=20)
 
         label_title = customtkinter.CTkLabel(self.account_settings_frame, text="Account Settings", font=("Arial", 16))
@@ -538,7 +596,7 @@ class LoginApp:
         search = SearchEngine()
         result = search.by_zipcode(zip_code)
         if result:
-            return [result.lat, result.lng, result.city]
+            return [result.lat, result.lng, result.post_office_city]
         else:
             messagebox.showerror("Search Error", f"Unable to retrieve data for the given zip code. Please try a different zip code.")
 
