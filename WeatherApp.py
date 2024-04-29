@@ -8,6 +8,7 @@ import sqlite3
 import re
 import requests
 from uszipcode import SearchEngine
+import tkintermapview
 
 # setup custom tkinter 
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
@@ -298,6 +299,13 @@ class LoginApp:
         weather_info += f"Wind Speed: {wind_speed} mph, Direction: {wind_direction}°\n"
 
         self.weather_label.configure(text=weather_info)
+
+        # Create map after zipcode input and place marker with description (could use icons from api) 
+        map_widget = tkintermapview.TkinterMapView(self.weather_frame, width=280, height=175, corner_radius=5)
+        map_widget.place(relx=.8, rely=0.77, anchor=customtkinter.CENTER)
+        map_widget.set_position(lat, long)
+        map_widget.set_zoom(12)
+        marker_1 = map_widget.set_marker(lat, long, text=f"{description}")
 
     def show_trend_and_forecast(self):
         """
