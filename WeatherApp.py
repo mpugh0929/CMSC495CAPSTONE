@@ -267,8 +267,10 @@ class LoginApp:
         # if we have a zip, run a search
         if self.preferred_zipcode:
             self.search_weather(True)
+            self.zipcode_entry.insert(0, self.preferred_zipcode)
         else:
             default_results = self.get_lat_long_from_zip(10001) # default search
+            self.zipcode_entry.insert(0, 10001)
             self.show_map(default_results[0], default_results[1], "Start your search!")
 
         # hide login frame
@@ -614,7 +616,8 @@ class LoginApp:
 
         # run a search with the preferred zip and populate
         if self.preferred_zipcode:
-                self.search_weather(True)
+            self.search_weather(True)
+            self.zipcode_entry.insert(0, self.preferred_zipcode)
 
         # show weather frame
         self.top_nav_frame.pack(fill=tk.X, pady=10)
