@@ -51,7 +51,7 @@ class LoginApp:
         """
         This function creates the login frame
         """
-        self.login_frame = customtkinter.CTkFrame(self.root)
+        self.login_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
         self.login_frame.pack(fill=tk.BOTH, expand=True)
 
         # custom tkinter doesnt support padding top, so this will help to give breathing room
@@ -224,53 +224,52 @@ class LoginApp:
         """
         This function loads the tkinter logic for the weather page
         """
-        if self.weather_frame is None:
-            # top nav
-            self.top_nav_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
-            self.top_nav_frame.pack(fill=tk.X, pady=10)            
+        # top nav
+        self.top_nav_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
+        self.top_nav_frame.pack(fill=tk.X, pady=10)            
 
-            self.account_settings_button = customtkinter.CTkButton(self.top_nav_frame, text="Account Settings", font=("Arial", 12), command=self.show_account_settings)
-            self.account_settings_button.pack(side=tk.RIGHT, padx=10)            
+        self.account_settings_button = customtkinter.CTkButton(self.top_nav_frame, text="Account Settings", font=("Arial", 12), command=self.show_account_settings)
+        self.account_settings_button.pack(side=tk.RIGHT, padx=10)            
 
-            self.weather_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
-            self.weather_frame.pack(fill=tk.BOTH, expand=True)
-            self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="Start Your Search Below!", font=("Arial", 20))
-            self.weather_label.pack(expand=True)                      
+        self.weather_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
+        self.weather_frame.pack(fill=tk.BOTH, expand=True)
+        self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="Start Your Search Below!", font=("Arial", 20))
+        self.weather_label.pack(expand=True)                      
 
-            # search frame
-            self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
-            self.weather_search_frame.pack(pady=10)
+        # search frame
+        self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
+        self.weather_search_frame.pack(pady=10)
 
-            self.zipcode_label = customtkinter.CTkLabel(self.weather_search_frame, text="Enter Zip Code:", font=("Arial", 12))
-            self.zipcode_label.grid(row=0, column=0, padx=5)
+        self.zipcode_label = customtkinter.CTkLabel(self.weather_search_frame, text="Enter Zip Code:", font=("Arial", 12))
+        self.zipcode_label.grid(row=0, column=0, padx=5)
 
-            self.zipcode_entry = customtkinter.CTkEntry(self.weather_search_frame, font=("Arial", 12))
-            self.zipcode_entry.grid(row=0, column=1, padx=5)
+        self.zipcode_entry = customtkinter.CTkEntry(self.weather_search_frame, font=("Arial", 12))
+        self.zipcode_entry.grid(row=0, column=1, padx=5)
 
-            self.search_button = customtkinter.CTkButton(self.weather_search_frame, text="Current Weather", font=("Arial", 12), command=self.search_weather)
-            self.search_button.grid(row=0, column=2, padx=5)
-            self.weather_trend_button = customtkinter.CTkButton(self.weather_search_frame, text="Trend & Forecast", font=("Arial", 12), command=self.show_trend_and_forecast)
-            self.weather_trend_button.grid(row=0, column=3, padx=5)
-            
-            # welcome label and results related info
-            self.welcome_label = customtkinter.CTkLabel(self.weather_frame, text="", font=("Arial", 12))
-            self.welcome_label.pack() 
+        self.search_button = customtkinter.CTkButton(self.weather_search_frame, text="Current Weather", font=("Arial", 12), command=self.search_weather)
+        self.search_button.grid(row=0, column=2, padx=5)
+        self.weather_trend_button = customtkinter.CTkButton(self.weather_search_frame, text="Trend & Forecast", font=("Arial", 12), command=self.show_trend_and_forecast)
+        self.weather_trend_button.grid(row=0, column=3, padx=5)
+        
+        # welcome label and results related info
+        self.welcome_label = customtkinter.CTkLabel(self.weather_frame, text="", font=("Arial", 12))
+        self.welcome_label.pack() 
 
-            self.weather_info_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
-            self.weather_info_frame.pack(fill=tk.BOTH, expand=True)
+        self.weather_info_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
+        self.weather_info_frame.pack(fill=tk.BOTH, expand=True)
 
-            self.weather_details_label = customtkinter.CTkLabel(self.weather_info_frame, text="", font=("Arial", 12))
-            self.weather_details_label.pack(side=tk.LEFT, pady=10)
+        self.weather_details_label = customtkinter.CTkLabel(self.weather_info_frame, text="", font=("Arial", 12))
+        self.weather_details_label.pack(side=tk.LEFT, pady=10)
 
-            self.map_frame = customtkinter.CTkFrame(self.weather_info_frame)
-            self.map_frame.pack(side=tk.RIGHT, pady=10)
-            
-            # if we have a zip, run a search
-            if self.preferred_zipcode:
-                self.search_weather(True)
-            else:
-                default_results = self.get_lat_long_from_zip(10001) # default search
-                self.show_map(default_results[0], default_results[1], "Start your search!")
+        self.map_frame = customtkinter.CTkFrame(self.weather_info_frame)
+        self.map_frame.pack(side=tk.RIGHT, pady=10)
+        
+        # if we have a zip, run a search
+        if self.preferred_zipcode:
+            self.search_weather(True)
+        else:
+            default_results = self.get_lat_long_from_zip(10001) # default search
+            self.show_map(default_results[0], default_results[1], "Start your search!")
 
         # hide login frame
         self.login_frame.pack_forget()
@@ -391,11 +390,11 @@ class LoginApp:
         """
         # 1 day avg
         hourly_temperatures = [hour["temp"] for hour in data["hourly"][:24]]
-        one_day_average = sum(hourly_temperatures) / len(hourly_temperatures)
+        one_day_average = round(sum(hourly_temperatures) / len(hourly_temperatures), 2)
 
         # 5 day avg
         daily_temperatures = [day["temp"]["day"] for day in data["daily"][:5]]
-        five_day_average = sum(daily_temperatures) / len(daily_temperatures)       
+        five_day_average = round(sum(daily_temperatures) / len(daily_temperatures), 2)       
 
         return one_day_average, five_day_average
 
@@ -430,7 +429,7 @@ class LoginApp:
         This function logs the user out
         """
         # hide logged in frame
-        self.weather_frame.pack_forget()
+        self.account_settings_frame.pack_forget()
 
         # reset session variables
         self.preferred_zipcode = None
@@ -438,8 +437,7 @@ class LoginApp:
         self.userid = 0
 
         # show reg frame
-        self.login_frame.pack()
-        self.register_frame.pack()
+        self.login_frame.pack(fill=tk.BOTH, expand=True)
 
     def show_account_settings(self):
         """
@@ -619,7 +617,7 @@ class LoginApp:
                 self.search_weather(True)
 
         # show weather frame
-        self.top_nav_frame.pack(fill=tk.BOTH, expand=True)
+        self.top_nav_frame.pack(fill=tk.X, pady=10)
         self.weather_frame.pack(fill=tk.BOTH, expand=True)
 
     def update_welcome_label(self):
