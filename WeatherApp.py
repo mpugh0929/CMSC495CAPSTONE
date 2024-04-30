@@ -54,10 +54,14 @@ class LoginApp:
         self.login_frame = customtkinter.CTkFrame(self.root)
         self.login_frame.pack(fill=tk.BOTH, expand=True)
 
+        # custom tkinter doesnt support padding top, so this will help to give breathing room
+        spacer = customtkinter.CTkLabel(self.login_frame, text="", height=30)
+        spacer.pack()
+
         title_label = customtkinter.CTkLabel(self.login_frame, text="Welcome to the Weather App!", font=("Arial", 20))
         title_label.pack(pady=10)
         
-        subheading_label = customtkinter.CTkLabel(self.login_frame, text="Log-in or Register to Get Started!", font=("Arial", 12))
+        subheading_label = customtkinter.CTkLabel(self.login_frame, text="Log In or Register to Get Started!", font=("Arial", 12))
         subheading_label.pack()
 
         entry_frame = customtkinter.CTkFrame(self.login_frame, fg_color="transparent")
@@ -78,7 +82,7 @@ class LoginApp:
         button_frame = customtkinter.CTkFrame(self.login_frame)
         button_frame.pack(pady=10)
 
-        login_button = customtkinter.CTkButton(button_frame, text="Login", font=("Arial", 12), command=self.login)
+        login_button = customtkinter.CTkButton(button_frame, text="Log In", font=("Arial", 12), command=self.login)
         login_button.grid(row=0, column=0, padx=5)
 
         register_button = customtkinter.CTkButton(button_frame, text="Register", font=("Arial", 12), command=self.register)
@@ -221,25 +225,19 @@ class LoginApp:
         This function loads the tkinter logic for the weather page
         """
         if self.weather_frame is None:
-            # Top navigation bar
+            # top nav
             self.top_nav_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
-            self.top_nav_frame.pack(fill=tk.X, pady=10)
-
-            self.logout_button = customtkinter.CTkButton(self.top_nav_frame, text="Logout", font=("Arial", 12), command=self.logout)
-            self.logout_button.pack(side=tk.RIGHT, padx=10)
+            self.top_nav_frame.pack(fill=tk.X, pady=10)            
 
             self.account_settings_button = customtkinter.CTkButton(self.top_nav_frame, text="Account Settings", font=("Arial", 12), command=self.show_account_settings)
-            self.account_settings_button.pack(side=tk.LEFT, padx=10)            
+            self.account_settings_button.pack(side=tk.RIGHT, padx=10)            
 
             self.weather_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
             self.weather_frame.pack(fill=tk.BOTH, expand=True)
             self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="Start Your Search Below!", font=("Arial", 20))
-            self.weather_label.pack(expand=True)
+            self.weather_label.pack(expand=True)                      
 
-            self.welcome_label = customtkinter.CTkLabel(self.weather_frame, text="", font=("Arial", 12))
-            self.welcome_label.pack()            
-
-            # Weather search bar
+            # search frame
             self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
             self.weather_search_frame.pack(pady=10)
 
@@ -253,27 +251,29 @@ class LoginApp:
             self.search_button.grid(row=0, column=2, padx=5)
             self.weather_trend_button = customtkinter.CTkButton(self.weather_search_frame, text="Trend & Forecast", font=("Arial", 12), command=self.show_trend_and_forecast)
             self.weather_trend_button.grid(row=0, column=3, padx=5)
+            
+            # welcome label and results related info
+            self.welcome_label = customtkinter.CTkLabel(self.weather_frame, text="", font=("Arial", 12))
+            self.welcome_label.pack() 
 
-            # Weather details and buttons
             self.weather_info_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
             self.weather_info_frame.pack(fill=tk.BOTH, expand=True)
 
             self.weather_details_label = customtkinter.CTkLabel(self.weather_info_frame, text="", font=("Arial", 12))
-            self.weather_details_label.pack(pady=10)
+            self.weather_details_label.pack(side=tk.LEFT, pady=10)
 
-            self.map_frame = customtkinter.CTkFrame(self.weather_frame)
-            self.map_frame.pack(pady=10)
+            self.map_frame = customtkinter.CTkFrame(self.weather_info_frame)
+            self.map_frame.pack(side=tk.RIGHT, pady=10)
             
+            # if we have a zip, run a search
             if self.preferred_zipcode:
                 self.search_weather(True)
             else:
-                default_results = self.get_lat_long_from_zip(10001)
+                default_results = self.get_lat_long_from_zip(10001) # default search
                 self.show_map(default_results[0], default_results[1], "Start your search!")
 
         # hide login frame
         self.login_frame.pack_forget()
-        self.register_frame.pack_forget()
-
 
     def search_weather(self, usePreferredZip = False):
         """
@@ -333,7 +333,7 @@ class LoginApp:
             long (float): longitude of the queried location
             description (string): text to display on the map
         """
-        map_widget = tkintermapview.TkinterMapView(self.map_frame, width=280, height=175, corner_radius=5)
+        map_widget = tkintermapview.TkinterMapView(self.map_frame, width=200, height=175, corner_radius=5)
         map_widget.pack(fill=tk.BOTH, expand=True) 
 
         map_widget.set_position(lat, long)
@@ -447,56 +447,66 @@ class LoginApp:
         """
         # hide weather frame
         self.weather_frame.pack_forget()
-
+        self.top_nav_frame.pack_forget()
         # show account settings frame
         self.account_settings_frame = customtkinter.CTkFrame(master=self.root, fg_color="transparent")
-        self.account_settings_frame.pack(pady=20)
+        self.account_settings_frame.pack(fill=tk.BOTH, expand=True)
 
         label_title = customtkinter.CTkLabel(self.account_settings_frame, text="Account Settings", font=("Arial", 16))
-        label_title.grid(row=0, columnspan=2, pady=10)
+        label_title.pack(pady=10)
 
-        label_username = customtkinter.CTkLabel(self.account_settings_frame, text="Username:")
-        label_username.grid(row=1, column=0, sticky="w", padx=10)
+        entry_frame = customtkinter.CTkFrame(self.account_settings_frame, fg_color="transparent")
+        entry_frame.pack(pady=10)
 
-        entry_username = customtkinter.CTkEntry(self.account_settings_frame, font=("Arial", 12))
-        entry_username.grid(row=1, column=1, padx=10)
+        label_username = customtkinter.CTkLabel(entry_frame, text="Username:")
+        label_username.grid(row=0, column=0, sticky="w", padx=10, pady=5)
+
+        entry_username = customtkinter.CTkEntry(entry_frame, font=("Arial", 12))
+        entry_username.grid(row=0, column=1, padx=10, pady=5)
 
         # prefill information
         if self.current_username:
             entry_username.insert(0, self.current_username)
 
-        label_password = customtkinter.CTkLabel(self.account_settings_frame, text="New Password:")
-        label_password.grid(row=2, column=0, sticky="w", padx=10)
+        label_password = customtkinter.CTkLabel(entry_frame, text="New Password:")
+        label_password.grid(row=1, column=0, sticky="w", padx=10, pady=5)
 
-        entry_password = customtkinter.CTkEntry(self.account_settings_frame, show="*", font=("Arial", 12))
-        entry_password.grid(row=2, column=1, padx=10)
+        entry_password = customtkinter.CTkEntry(entry_frame, show="*", font=("Arial", 12))
+        entry_password.grid(row=1, column=1, padx=10, pady=5)
 
-        label_confirm_password = customtkinter.CTkLabel(self.account_settings_frame, text="Confirm New Password:")
-        label_confirm_password.grid(row=3, column=0, sticky="w", padx=10)
+        label_confirm_password = customtkinter.CTkLabel(entry_frame, text="Confirm New Password:")
+        label_confirm_password.grid(row=2, column=0, sticky="w", padx=10, pady=5)
 
-        entry_confirm_password = customtkinter.CTkEntry(self.account_settings_frame, show="*", font=("Arial", 12))
-        entry_confirm_password.grid(row=3, column=1, padx=10)
+        entry_confirm_password = customtkinter.CTkEntry(entry_frame, show="*", font=("Arial", 12))
+        entry_confirm_password.grid(row=2, column=1, padx=10, pady=5)
 
-        label_zipcode = customtkinter.CTkLabel(self.account_settings_frame, text="Preferred Zipcode:")
-        label_zipcode.grid(row=4, column=0, sticky="w", padx=10)
+        label_zipcode = customtkinter.CTkLabel(entry_frame, text="Preferred Zipcode:")
+        label_zipcode.grid(row=3, column=0, sticky="w", padx=10, pady=5)
 
-        entry_zipcode = customtkinter.CTkEntry(self.account_settings_frame, font=("Arial", 12))
-        entry_zipcode.grid(row=4, column=1, padx=10)
+        entry_zipcode = customtkinter.CTkEntry(entry_frame, font=("Arial", 12))
+        entry_zipcode.grid(row=3, column=1, padx=10, pady=5)
 
+        # prefill information
         if self.preferred_zipcode:
             entry_zipcode.insert(0, self.preferred_zipcode)
 
-        btn_save_changes = customtkinter.CTkButton(self.account_settings_frame, text="Save Changes",
-                                     command=lambda: self.save_account_changes(
-                                         entry_username.get(),
-                                         entry_password.get(),
-                                         entry_confirm_password.get(),
-                                         entry_zipcode.get()
-                                     ))
-        btn_save_changes.grid(row=5, columnspan=2, pady=10)
+        btn_frame = customtkinter.CTkFrame(self.account_settings_frame, fg_color="transparent")
+        btn_frame.pack()
 
-        btn_cancel = customtkinter.CTkButton(self.account_settings_frame, text="Cancel", command=self.cancel_account_settings)
-        btn_cancel.grid(row=6, columnspan=2, pady=10)
+        btn_save_changes = customtkinter.CTkButton(btn_frame, text="Save Changes",
+                                    command=lambda: self.save_account_changes(
+                                        entry_username.get(),
+                                        entry_password.get(),
+                                        entry_confirm_password.get(),
+                                        entry_zipcode.get()
+                                    ))
+        btn_save_changes.pack(side=tk.LEFT, padx=5, pady=10)
+
+        btn_cancel = customtkinter.CTkButton(btn_frame, text="Cancel", command=self.cancel_account_settings)
+        btn_cancel.pack(side=tk.LEFT, padx=5, pady=10)
+
+        self.logout_button = customtkinter.CTkButton(self.account_settings_frame, text="Log Out", font=("Arial", 12), command=self.logout, fg_color="red", text_color="black")
+        self.logout_button.pack(pady=10)
         
     def is_valid_zipcode(self, zipcode):
         """
@@ -604,7 +614,12 @@ class LoginApp:
         # hide account settings frame
         self.account_settings_frame.pack_forget()
 
+        # run a search with the preferred zip and populate
+        if self.preferred_zipcode:
+                self.search_weather(True)
+
         # show weather frame
+        self.top_nav_frame.pack(fill=tk.BOTH, expand=True)
         self.weather_frame.pack(fill=tk.BOTH, expand=True)
 
     def update_welcome_label(self):
