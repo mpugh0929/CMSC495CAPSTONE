@@ -158,8 +158,10 @@ class WeatherApp:
         """
         This function is the login authentication method
         """
-        username = self.username_entry.get()
-        password = self.password_entry.get()
+        # sanitize user input
+        username = self._sanitize_input(self.username_entry.get())
+        password = self._sanitize_input(self.password_entry.get())
+
         # hash the password
         hashed_password = self._hash_password(password)
 
@@ -430,7 +432,7 @@ class WeatherApp:
 
         # create weather label text
         weather_info = f"{location_info['city']}\n"
-        weather_info += f"One Day Prediction: {one_day_avg}\n"
+        weather_info += f"One Day Prediction: {one_day_avg}°F\n"
         weather_info += f"Five Day Average: {five_day_avg}°F\n"
         description = weather_data['current']['weather'][0]['description']
 
@@ -654,6 +656,11 @@ class WeatherApp:
             new_zipcode (int): zip code provided in the form
         """
         update_data = {}
+        # sanitize all input to guard against SQL injection or other attacks
+        new_username = self._sanitize_input(new_username)
+        new_password = self._sanitize_input(new_password)
+        confirm_password = self._sanitize_input(confirm_password)
+        new_zipcode = self._sanitize_input(confirm_password)
 
         if new_password.strip() != "":
             if new_password == confirm_password:
@@ -707,6 +714,8 @@ class WeatherApp:
         # run a search with the preferred zip and populate
         if self.preferred_zipcode:
             self._search_weather(True)
+            # clear it out and enter the preferred
+            self.zipcode_entry.delete(0, tk.END)
             self.zipcode_entry.insert(0, self.preferred_zipcode)
 
         # show weather frame
@@ -789,6 +798,16 @@ class WeatherApp:
         messagebox.showerror("Search Error",
                               f"Failed to retrieve data. Status code: {response.status_code}")
         return "Error"
+
+    def _sanitize_input(self, input_string):
+        """
+        Remove characters that could potentially lead to SQL injection
+        """
+        # removes all except white space, alphanumeric characters,
+        # and specific safe symbols like . , ! ? @ and #
+        if input_string is not None and input_string.strip() != '':
+            return re.sub(r'[^\w\s.,!?@#]', '', input_string)
+        return ''
 
 # this kicks off the app
 if __name__ == "__main__":
