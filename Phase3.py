@@ -1,20 +1,22 @@
-from datetime import datetime
+import sqlite3
+import re
 import hashlib
 import time
 import tkinter as tk
 from tkinter import messagebox
 import customtkinter
-import sqlite3
-import re
 import requests
 from uszipcode import SearchEngine
 import tkintermapview
 
-# setup custom tkinter 
+# setup custom tkinter
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "green", "dark-blue"
 
-class LoginApp:
+class WeatherApp:
+    """
+    Instance of the Weather App
+    """
     # API key for the weather API
     API_KEY = "129124b09cdff6292a9970660cd37091"
     # max login attempts
@@ -22,12 +24,12 @@ class LoginApp:
     # max duration to be blocked
     BLOCK_DURATION = 30 * 60
 
-    def __init__(self, root):
+    def __init__(self, app_root):
         """
         This function initalizes the app
         """
         # start up app
-        self.root = root
+        self.root = app_root
         self.root.title("Weather App")
         self.root.geometry("800x400")
         self.center_window()
@@ -42,51 +44,89 @@ class LoginApp:
         self.weather_frame = None
         self.map_widget = None
 
-        # init session variables
+        # init properties - make PyLint happy
         self.preferred_zipcode = None
         self.current_username = None
         self.userid = 0
         self.failed_login_attempts = {}
+        self.weather_info_frame = None
+        self.top_nav_frame = None
+        self.weather_search_frame = None
+        self.weather_details_label = None
+        self.welcome_label = None
+        self.search_button = None
+        self.weather_trend_button = None
+        self.map_frame = None
+        self.account_settings_frame = None
+        self.account_settings_button = None
+        self.weather_label = None
+        self.zipcode_entry = None
+        self.zipcode_label = None
+        self.logout_button = None
 
     def show_login_page(self):
         """
         This function creates the login frame
         """
-        self.login_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
-        self.login_frame.pack(fill=tk.BOTH, expand=True)
+        self.login_frame = customtkinter.CTkFrame(self.root,
+                                                   fg_color="transparent")
+        self.login_frame.pack(fill=tk.BOTH,
+                               expand=True)
 
         # custom tkinter doesnt support padding top, so this will help to give breathing room
-        spacer = customtkinter.CTkLabel(self.login_frame, text="", height=30)
+        spacer = customtkinter.CTkLabel(self.login_frame,
+                                         text="",
+                                         height=30)
         spacer.pack()
 
-        title_label = customtkinter.CTkLabel(self.login_frame, text="Welcome to the Weather App!", font=("Arial", 20))
+        title_label = customtkinter.CTkLabel(self.login_frame,
+                                              text="Welcome to the Weather App!",
+                                              font=("Arial", 20))
         title_label.pack(pady=10)
-        
-        subheading_label = customtkinter.CTkLabel(self.login_frame, text="Log In or Register to Get Started!", font=("Arial", 12))
+
+        subheading_label = customtkinter.CTkLabel(self.login_frame,
+                                                   text="Log In or Register to Get Started!",
+                                                   font=("Arial", 12))
         subheading_label.pack()
 
-        entry_frame = customtkinter.CTkFrame(self.login_frame, fg_color="transparent")
+        entry_frame = customtkinter.CTkFrame(self.login_frame,
+                                              fg_color="transparent")
         entry_frame.pack(pady=10)
 
-        username_label = customtkinter.CTkLabel(entry_frame, text="Username:", font=("Arial", 12))
+        username_label = customtkinter.CTkLabel(entry_frame,
+                                                 text="Username:",
+                                                 font=("Arial", 12))
+
         username_label.grid(row=0, column=0, padx=5, pady=5)
 
-        self.username_entry = customtkinter.CTkEntry(entry_frame, font=("Arial", 12))
+        self.username_entry = customtkinter.CTkEntry(entry_frame,
+                                                      font=("Arial", 12))
         self.username_entry.grid(row=0, column=1, padx=5, pady=5)
 
-        password_label = customtkinter.CTkLabel(entry_frame, text="Password:", font=("Arial", 12))
+        password_label = customtkinter.CTkLabel(entry_frame,
+                                                 text="Password:",
+                                                 font=("Arial", 12))
         password_label.grid(row=1, column=0, padx=5, pady=5)
 
-        self.password_entry = customtkinter.CTkEntry(entry_frame, show="*", font=("Arial", 12))
+        self.password_entry = customtkinter.CTkEntry(entry_frame,
+                                                     show="*",
+                                                     font=("Arial", 12))
+
         self.password_entry.grid(row=1, column=1, padx=5, pady=5)
 
         button_frame = customtkinter.CTkFrame(self.login_frame)
         button_frame.pack(pady=10)
 
-        login_button = customtkinter.CTkButton(button_frame, text="Log In", font=("Arial", 12), command=self.login)
+        login_button = customtkinter.CTkButton(button_frame,
+                                                text="Log In",
+                                                font=("Arial", 12),
+                                                command=self.login)
         login_button.grid(row=0, column=0, padx=5)
 
-        register_button = customtkinter.CTkButton(button_frame, text="Register", font=("Arial", 12), command=self.register)
+        register_button = customtkinter.CTkButton(button_frame,
+                                                   text="Register",
+                                                    font=("Arial", 12),
+                                                     command=self.register)
         register_button.grid(row=0, column=1, padx=5)
 
     def create_database_connection(self):
@@ -123,8 +163,9 @@ class LoginApp:
         # check if the user is blocked
         if username in self.failed_login_attempts and self.failed_login_attempts[username]["blocked"]:
             # if theyre blocked, check the timestamp on their user vs the timeout
-            if time.time() - self.failed_login_attempts[username]["timestamp"] < self.BLOCK_DURATION:
-                messagebox.showerror("Login Blocked", "You have exceeded the maximum number of login attempts. Please try again later.")
+            if time.time()-self.failed_login_attempts[username]["timestamp"] < self.BLOCK_DURATION:
+                messagebox.showerror("Login Blocked",
+                                      "You have exceeded the maximum number of login attempts. Please try again later.")
                 return
 
         # query for the user
@@ -145,15 +186,17 @@ class LoginApp:
             else:
                 # handle an unsuccessful login, toll attempts
                 self.handle_failed_login(username)
-                attemptsRemaining = self.MAX_LOGIN_ATTEMPTS - self.failed_login_attempts[username]["attempts"];
+                attempts_remaining = self.MAX_LOGIN_ATTEMPTS - self.failed_login_attempts[username]["attempts"]
                 if not self.failed_login_attempts[username]["blocked"]:
-                    messagebox.showerror("Login Failed", f"Incorrect username or password. You have {attemptsRemaining} {'attempt' if attemptsRemaining == 1 else 'attempts'} remaining.")
+                    messagebox.showerror("Login Failed",
+                                          f"Incorrect username or password. You have {attempts_remaining} {'attempt' if attempts_remaining == 1 else 'attempts'} remaining.")
         else:
             messagebox.showerror("Login Failed", "User not found")
 
     def handle_failed_login(self, username):
         """
-        This function handles an unsuccessful login by tolling the attempts for the user and blocking them if necessary
+        This function handles an unsuccessful login 
+        by tolling the attempts for the user and blocking them if necessary
 
         Args:
             username (string): the username attempted
@@ -162,7 +205,9 @@ class LoginApp:
         if username in self.failed_login_attempts:
             self.failed_login_attempts[username]["attempts"] += 1
         else:
-            self.failed_login_attempts[username] = {"attempts": 1, "timestamp": time.time(), "blocked": False}
+            self.failed_login_attempts[username] = {"attempts": 1,
+                                                     "timestamp": time.time(),
+                                                     "blocked": False }
 
         if self.failed_login_attempts[username]["attempts"] >= self.MAX_LOGIN_ATTEMPTS:
             self.block_user(username)
@@ -175,7 +220,8 @@ class LoginApp:
         """
         self.failed_login_attempts[username]["timestamp"] = time.time()
         self.failed_login_attempts[username]["blocked"] = True
-        messagebox.showerror("Login Blocked", "You have exceeded the maximum number of login attempts. Please try again later.")
+        messagebox.showerror("Login Blocked",
+                              "Maximum log in attempts exceeded. Please try again later.")
 
     def reset_failed_attempts(self, username):
         """
@@ -199,15 +245,18 @@ class LoginApp:
         if username.strip() == "" or password.strip() == "":
             messagebox.showerror("Registration Failed", "Username or password cannot be empty")
             return
-        
+
         # ensure the password is secure
         if not self.is_secure_password(password):
-            messagebox.showerror("Registration Failed", "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
+            messagebox.showerror("Registration Failed",
+                                 "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
             return
         try:
             # hash the password and store it in the DB
             hashed_password = self.hash_password(password)
-            self.cursor.execute("INSERT INTO Users (Username, Password) VALUES (?, ?)", (username, hashed_password))
+            self.cursor.execute("INSERT INTO Users (Username, Password) VALUES (?, ?)",
+                                 (username, hashed_password))
+
             self.conn.commit()
             messagebox.showinfo("Registration Successful", "User registered successfully")
             self.current_username = username
@@ -229,42 +278,64 @@ class LoginApp:
         self.top_nav_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
         self.top_nav_frame.pack(fill=tk.X, pady=10)            
 
-        self.account_settings_button = customtkinter.CTkButton(self.top_nav_frame, text="Account Settings", font=("Arial", 12), command=self.show_account_settings)
-        self.account_settings_button.pack(side=tk.RIGHT, padx=10)            
+        self.account_settings_button = customtkinter.CTkButton(self.top_nav_frame,
+                                                                text="Account Settings",
+                                                                font=("Arial", 12),
+                                                                command=self.show_account_settings)
+
+        self.account_settings_button.pack(side=tk.RIGHT, padx=10)        
 
         self.weather_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
         self.weather_frame.pack(fill=tk.BOTH, expand=True)
-        self.weather_label = customtkinter.CTkLabel(self.weather_frame, text="Start Your Search Below!", font=("Arial", 20))
-        self.weather_label.pack(expand=True)                      
+        self.weather_label = customtkinter.CTkLabel(self.weather_frame,
+                                                     text="Start Your Search Below!",
+                                                     font=("Arial", 20))
+        self.weather_label.pack(expand=True)  
 
         # search frame
-        self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
+        self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame,
+                                                            fg_color="transparent")
         self.weather_search_frame.pack(pady=10)
+        self.zipcode_label = customtkinter.CTkLabel(self.weather_search_frame,
+                                                    text="Enter Zip Code:",
+                                                    font=("Arial", 12))
 
-        self.zipcode_label = customtkinter.CTkLabel(self.weather_search_frame, text="Enter Zip Code:", font=("Arial", 12))
         self.zipcode_label.grid(row=0, column=0, padx=5)
 
-        self.zipcode_entry = customtkinter.CTkEntry(self.weather_search_frame, font=("Arial", 12))
+        self.zipcode_entry = customtkinter.CTkEntry(self.weather_search_frame,
+                                                    font=("Arial", 12))
         self.zipcode_entry.grid(row=0, column=1, padx=5)
 
-        self.search_button = customtkinter.CTkButton(self.weather_search_frame, text="Current Weather", font=("Arial", 12), command=self.search_weather)
+        self.search_button = customtkinter.CTkButton(self.weather_search_frame, 
+                                                     text="Current Weather",
+                                                     font=("Arial", 12),
+                                                     command=self.search_weather)
         self.search_button.grid(row=0, column=2, padx=5)
-        self.weather_trend_button = customtkinter.CTkButton(self.weather_search_frame, text="Trend & Forecast", font=("Arial", 12), command=self.show_trend_and_forecast)
+        self.weather_trend_button = customtkinter.CTkButton(self.weather_search_frame,
+                                                            text="Trend & Forecast",
+                                                            font=("Arial", 12),
+                                                            command=self.show_trend_and_forecast)
         self.weather_trend_button.grid(row=0, column=3, padx=5)
-        
-        # welcome label and results related info
-        self.welcome_label = customtkinter.CTkLabel(self.weather_frame, text="", font=("Arial", 12))
-        self.welcome_label.pack() 
 
-        self.weather_info_frame = customtkinter.CTkFrame(self.weather_frame, fg_color="transparent")
+        # welcome label and results related info
+        self.welcome_label = customtkinter.CTkLabel(self.weather_frame,
+                                                    text="",
+                                                    font=("Arial", 12))
+        self.welcome_label.pack()
+
+        self.weather_info_frame = customtkinter.CTkFrame(self.weather_frame,
+                                                         fg_color="transparent")
         self.weather_info_frame.pack(fill=tk.BOTH, expand=True)
 
-        self.weather_details_label = customtkinter.CTkLabel(self.weather_info_frame, text="", font=("Arial", 12))
-        self.weather_details_label.pack(side=tk.LEFT, pady=10)
+        self.weather_details_label = customtkinter.CTkLabel(self.weather_info_frame,
+                                                            text="",
+                                                            font=("Arial", 12))
+        self.weather_details_label.pack(side=tk.LEFT,
+                                        pady=10)
 
         self.map_frame = customtkinter.CTkFrame(self.weather_info_frame)
         self.map_frame.pack(side=tk.RIGHT, pady=10)
-        
+
         # if we have a zip, run a search
         if self.preferred_zipcode:
             self.search_weather(True)
@@ -277,12 +348,12 @@ class LoginApp:
         # hide login frame
         self.login_frame.pack_forget()
 
-    def search_weather(self, usePreferredZip = False):
+    def search_weather(self, use_preferred_zip = False):
         """
         This function searches for the weather in a location and displays it
         """
         zipcode = self.zipcode_entry.get()
-        if usePreferredZip:
+        if use_preferred_zip:
             zipcode = self.preferred_zipcode
 
         # ensure the zip code is valid
@@ -291,14 +362,15 @@ class LoginApp:
             return
 
         # get the lat/long from zip so we can query the API
-        cityData = self.get_lat_long_from_zip(zipcode)
-        if cityData is None:
-            messagebox.showerror("Error", "Could not find city information for the provided zip code.")
+        city_data = self.get_lat_long_from_zip(zipcode)
+        if city_data is None:
+            messagebox.showerror("Error",
+                                 "Could not find city information for the provided zip code.")
             return
-        
-        lat = cityData[0]
-        long = cityData[1]
-        city = cityData[2]
+
+        lat = city_data[0]
+        long = city_data[1]
+        city = city_data[2]
 
         # query the API
         weather_data = self.get_weather_response(lat, long)
@@ -334,9 +406,12 @@ class LoginApp:
             long (float): longitude of the queried location
             description (string): text to display on the map
         """
-        if (self.map_widget is None):
-            self.map_widget = tkintermapview.TkinterMapView(self.map_frame, width=200, height=175, corner_radius=5)
-            self.map_widget.pack(fill=tk.BOTH, expand=True) 
+        if self.map_widget is None:
+            self.map_widget = tkintermapview.TkinterMapView(self.map_frame,
+                                                            width=200,
+                                                            height=175,
+                                                            corner_radius=5)
+            self.map_widget.pack(fill=tk.BOTH, expand=True)
 
         self.map_widget.set_position(lat, long)
         self.map_widget.set_zoom(12)
@@ -353,15 +428,16 @@ class LoginApp:
         if not self.is_valid_zipcode(zipcode):
             messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
             return
-        
-        cityData = self.get_lat_long_from_zip(zipcode)
-        if cityData is None:
-            messagebox.showerror("Error", "Could not find city information for the provided zip code.")
+
+        city_data = self.get_lat_long_from_zip(zipcode)
+        if city_data is None:
+            messagebox.showerror("Error",
+                                 "Could not find city information for the provided zip code.")
             return
-        
-        lat = cityData[0]
-        long = cityData[1]
-        city = cityData[2]
+
+        lat = city_data[0]
+        long = city_data[1]
+        city = city_data[2]
 
         # query the API
         weather_data = self.get_weather_response(lat, long)
@@ -385,7 +461,8 @@ class LoginApp:
 
     def trend_calculations(self, data):
         """
-        Calculates the 1-day prediction using a 24-hour average and a 5-day prediction using a 5-day average
+        Calculates the 1-day prediction using a 24-hour average
+        and a 5-day prediction using a 5-day average
 
         Args:
             data (dictionary): JSON API response
@@ -416,7 +493,7 @@ class LoginApp:
         directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
         index = round(degrees / 45) % 8
         return directions[index]
-    
+
     def center_window(self):
         """
         This function centers the gui on start
@@ -452,10 +529,13 @@ class LoginApp:
         self.weather_frame.pack_forget()
         self.top_nav_frame.pack_forget()
         # show account settings frame
-        self.account_settings_frame = customtkinter.CTkFrame(master=self.root, fg_color="transparent")
+        self.account_settings_frame = customtkinter.CTkFrame(master=self.root,
+                                                             fg_color="transparent")
         self.account_settings_frame.pack(fill=tk.BOTH, expand=True)
 
-        label_title = customtkinter.CTkLabel(self.account_settings_frame, text="Account Settings", font=("Arial", 16))
+        label_title = customtkinter.CTkLabel(self.account_settings_frame,
+                                             text="Account Settings",
+                                             font=("Arial", 16))
         label_title.pack(pady=10)
 
         entry_frame = customtkinter.CTkFrame(self.account_settings_frame, fg_color="transparent")
@@ -505,12 +585,14 @@ class LoginApp:
                                     ))
         btn_save_changes.pack(side=tk.LEFT, padx=5, pady=10)
 
-        btn_cancel = customtkinter.CTkButton(btn_frame, text="Cancel", command=self.cancel_account_settings)
+        btn_cancel = customtkinter.CTkButton(btn_frame,
+                                              text="Cancel",
+                                              command=self.cancel_account_settings)
         btn_cancel.pack(side=tk.LEFT, padx=5, pady=10)
 
         self.logout_button = customtkinter.CTkButton(self.account_settings_frame, text="Log Out", font=("Arial", 12), command=self.logout, fg_color="red", text_color="black")
         self.logout_button.pack(pady=10)
-        
+
     def is_valid_zipcode(self, zipcode):
         """
         This function checks if the provided zip code is valid with REGEX
@@ -524,7 +606,7 @@ class LoginApp:
         # 5 digits or 5 digits followed by a hyphen and 4 digits
         pattern = r'^\d{5}(?:-\d{4})?$'
         return bool(re.match(pattern, zipcode))
-    
+
     def is_secure_password(self, password):
         """
         This function checks if the provided password is secure. 
@@ -557,7 +639,7 @@ class LoginApp:
             return False
 
         return True
-    
+
     def save_account_changes(self, new_username, new_password, confirm_password, new_zipcode):
         """
         This function saves the changes made in the account settings form
@@ -574,16 +656,16 @@ class LoginApp:
             if new_password == confirm_password:
                 # make sure the password reaches secure reqs
                 if not self.is_secure_password(new_password):
-                    messagebox.showerror("Password Error", "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
+                    messagebox.showerror("Password Error",
+                                          "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
                     return
-                else:
-                    # hash password for security
-                    new_hashed_password = self.hash_password(new_password)
-                    self.cursor.execute("UPDATE Users SET Password = ? WHERE UserId = ?", (new_hashed_password, self.userid))
-                    self.conn.commit()
-            else:
-                messagebox.showerror("Password Error", "Passwords do not match")
-                return
+                # hash password for security
+                new_hashed_password = self.hash_password(new_password)
+                self.cursor.execute("UPDATE Users SET Password = ? WHERE UserId = ?",
+                                        (new_hashed_password, self.userid))
+                self.conn.commit()
+            messagebox.showerror("Password Error", "Passwords do not match")
+            return
 
         if new_username.strip() != "":
             if new_username != self.current_username:
@@ -648,7 +730,7 @@ class LoginApp:
         # hash the password using hashlib
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         return hashed_password
-    
+
     def get_lat_long_from_zip(self, zip_code):
         """
         Get latitude and longitude from a given zip code using the uszipcode library.
@@ -664,7 +746,7 @@ class LoginApp:
         if result:
             return [result.lat, result.lng, result.post_office_city]
         else:
-            messagebox.showerror("Search Error", f"Unable to retrieve data for the given zip code. Please try a different zip code.")
+            messagebox.showerror("Search Error", "Unable to retrieve data for the given zip code. Please try a different zip code.")
 
     def get_weather_response(self, lat, long):
         """
@@ -678,17 +760,18 @@ class LoginApp:
             dictionary: JSON response from API
         """
         # set up GET request
-        endpointURL = f"https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={long}&appid={self.API_KEY}&units=imperial"
-        
-        response = requests.get(endpointURL)
-        
+        endpoint_URL = f"https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={long}&appid={self.API_KEY}&units=imperial"
+
+        response = requests.get(endpoint_URL, timeout=10)
+
         if response.status_code == 200:
             return response.json()
-        
-        messagebox.showerror("Search Error", f"Failed to retrieve data. Status code: {response.status_code}")
+ 
+        messagebox.showerror("Search Error",
+                              f"Failed to retrieve data. Status code: {response.status_code}")
 
 # this kicks off the app
 if __name__ == "__main__":
     root = customtkinter.CTk() #CustomTkinter
-    app = LoginApp(root)
+    app = WeatherApp(root)
     root.mainloop()
