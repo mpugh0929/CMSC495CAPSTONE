@@ -358,25 +358,14 @@ class WeatherApp:
         zipcode = self.zipcode_entry.get()
         if use_preferred_zip:
             zipcode = self.preferred_zipcode
-
-        # ensure the zip code is valid
-        if not self._is_valid_zipcode(zipcode):
-            messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
-            return
-
-        # get the lat/long from zip so we can query the API
-        city_data = self._get_lat_long_from_zip(zipcode)
-        if city_data is None:
-            messagebox.showerror("Error",
-                                 "Could not find city information for the provided zip code.")
-            return
-
-        lat = city_data[0]
-        long = city_data[1]
-        city = city_data[2]
+        location_info = self._get_city_data_from_zip(zipcode)
 
         # query the API
-        weather_data = self._get_weather_response(lat, long)
+        weather_data = self._get_weather_response(location_info["lat"], location_info["long"])
+        if weather_data is None:
+            messagebox.showerror("Error", "Could not retrieve weather information.")
+            return
+        weather_data = self._get_weather_response(location_info["lat"], location_info["long"])
         if weather_data is None:
             messagebox.showerror("Error", "Could not retrieve weather information.")
             return
@@ -390,14 +379,14 @@ class WeatherApp:
         wind_direction = self._degrees_to_cardinal(wind_direction_degrees)
 
         # create weather label text
-        weather_info = f"{city}\n"
+        weather_info = f"{location_info['city']}\n"
         weather_info += f"Weather: {description}\n"
         weather_info += f"Temperature: {temperature}°F\n"
         weather_info += f"Humidity: {humidity}%\n"
         weather_info += f"Wind Speed: {wind_speed} mph, Direction: {wind_direction}°\n"
 
         self.weather_label.configure(text=weather_info)
-        self.show_map(lat, long, description)
+        self.show_map(location_info["lat"], location_info["long"], description)
         self.weather_frame.update_idletasks()
 
 
@@ -426,40 +415,27 @@ class WeatherApp:
         """
         This function loads the forecast into the weather label
         """
-        # just update the weather info label
-        zipcode = self.zipcode_entry.get()
-        if not self._is_valid_zipcode(zipcode):
-            messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
-            return
-
-        city_data = self._get_lat_long_from_zip(zipcode)
-        if city_data is None:
-            messagebox.showerror("Error",
-                                 "Could not find city information for the provided zip code.")
-            return
-
-        lat = city_data[0]
-        long = city_data[1]
-        city = city_data[2]
+        location_info = self._get_city_data_from_zip(self.zipcode_entry.get())
 
         # query the API
-        weather_data = self._get_weather_response(lat, long)
+        weather_data = self._get_weather_response(location_info["lat"], location_info["long"])
         if weather_data is None:
             messagebox.showerror("Error", "Could not retrieve weather information.")
             return
+        weather_data = self._get_weather_response(location_info["lat"], location_info["long"])
 
         # display results from the API
         # Implement trend and forecast functionality here
         one_day_avg, five_day_avg = self._trend_calculations(weather_data)
 
         # create weather label text
-        weather_info = f"{city}\n"
+        weather_info = f"{location_info['city']}\n"
         weather_info += f"One Day Prediction: {one_day_avg}\n"
         weather_info += f"Five Day Average: {five_day_avg}°F\n"
         description = weather_data['current']['weather'][0]['description']
 
         self.weather_label.configure(text=weather_info)
-        self.show_map(lat, long, description)
+        self.show_map(location_info["lat"], location_info["long"], description)
         self.weather_frame.update_idletasks()
 
     def _trend_calculations(self, data):
@@ -496,6 +472,25 @@ class WeatherApp:
         directions = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]
         index = round(degrees / 45) % 8
         return directions[index]
+
+    def _get_city_data_from_zip(self, zipcode):
+        """
+        Helper method to validate the response from the API integration
+
+        Returns:
+            dictionary: city information
+        """
+        if not self._is_valid_zipcode(zipcode):
+            messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
+            return
+
+        city_data = self._get_lat_long_from_zip(zipcode)
+        if city_data is None or city_data["lat"] is None:
+            messagebox.showerror("Error",
+                                "Could not find city information for the provided zip code.")
+            return
+
+        return city_data
 
     def _center_window(self):
         """
@@ -754,12 +749,22 @@ class WeatherApp:
         search = SearchEngine()
         result = search.by_zipcode(zip_code)
         if result:
-            return [result.lat, result.lng, result.post_office_city]
+            city_data = {
+                "lat": result.lat,
+                "long": result.lng,
+                "city": result.post_office_city
+            }
+            return city_data
 
         messagebox.showerror("Search Error",
                                 "Unable to retrieve data for the given zip code." + 
                                 "Please try a different zip code.")
-        return [0, 0, "Error"]
+        city_data = {
+            "lat": None,
+            "long": None,
+            "city": None
+        }
+        return city_data
 
     def _get_weather_response(self, lat, long):
         """
