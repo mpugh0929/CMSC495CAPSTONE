@@ -1,3 +1,6 @@
+"""
+This file contains all the code for the Weather App Project
+"""
 import sqlite3
 import re
 import hashlib
@@ -32,11 +35,11 @@ class WeatherApp:
         self.root = app_root
         self.root.title("Weather App")
         self.root.geometry("800x400")
-        self.center_window()
+        self._center_window()
 
         # begin DB connection
-        self.create_database_connection()
-        self.create_table()
+        self._create_database_connection()
+        self._create_table()
 
         self.show_login_page()
 
@@ -120,23 +123,23 @@ class WeatherApp:
         login_button = customtkinter.CTkButton(button_frame,
                                                 text="Log In",
                                                 font=("Arial", 12),
-                                                command=self.login)
+                                                command=self._login)
         login_button.grid(row=0, column=0, padx=5)
 
         register_button = customtkinter.CTkButton(button_frame,
                                                    text="Register",
                                                     font=("Arial", 12),
-                                                     command=self.register)
+                                                     command=self._register)
         register_button.grid(row=0, column=1, padx=5)
 
-    def create_database_connection(self):
+    def _create_database_connection(self):
         """
         This function connects to SQLite db
         """
         self.conn = sqlite3.connect('users.db')
         self.cursor = self.conn.cursor()
 
-    def create_table(self):
+    def _create_table(self):
         """
         This function creates the Users table upon app start if it does not exist
         """
@@ -151,14 +154,14 @@ class WeatherApp:
         ''')
         self.conn.commit()
 
-    def login(self):
+    def _login(self):
         """
         This function is the login authentication method
         """
         username = self.username_entry.get()
         password = self.password_entry.get()
         # hash the password
-        hashed_password = self.hash_password(password)
+        hashed_password = self._hash_password(password)
 
         # check if the user is blocked
         if username in self.failed_login_attempts and self.failed_login_attempts[username]["blocked"]:
@@ -176,16 +179,16 @@ class WeatherApp:
         if user:
             stored_hashed_password = user[2]
             if stored_hashed_password == hashed_password:
-                self.reset_failed_attempts(username)
+                self._reset_failed_attempts(username)
                 self.userid = user[0]
                 # set session variables, boot up the weather page
                 self.current_username = user[1]
                 self.preferred_zipcode = user[3]
                 self.show_weather_page()
-                self.update_welcome_label()
+                self._update_welcome_label()
             else:
                 # handle an unsuccessful login, toll attempts
-                self.handle_failed_login(username)
+                self._handle_failed_login(username)
                 attempts_remaining = self.MAX_LOGIN_ATTEMPTS - self.failed_login_attempts[username]["attempts"]
                 if not self.failed_login_attempts[username]["blocked"]:
                     messagebox.showerror("Login Failed",
@@ -193,7 +196,7 @@ class WeatherApp:
         else:
             messagebox.showerror("Login Failed", "User not found")
 
-    def handle_failed_login(self, username):
+    def _handle_failed_login(self, username):
         """
         This function handles an unsuccessful login 
         by tolling the attempts for the user and blocking them if necessary
@@ -210,9 +213,9 @@ class WeatherApp:
                                                      "blocked": False }
 
         if self.failed_login_attempts[username]["attempts"] >= self.MAX_LOGIN_ATTEMPTS:
-            self.block_user(username)
+            self._block_user(username)
 
-    def block_user(self, username):
+    def _block_user(self, username):
         """Blocks the user from logging in for BLOCK_DURATION seconds
 
         Args:
@@ -223,7 +226,7 @@ class WeatherApp:
         messagebox.showerror("Login Blocked",
                               "Maximum log in attempts exceeded. Please try again later.")
 
-    def reset_failed_attempts(self, username):
+    def _reset_failed_attempts(self, username):
         """
         This function resets the failed attempts for the user upon successful login
 
@@ -234,7 +237,7 @@ class WeatherApp:
         if username in self.failed_login_attempts:
             del self.failed_login_attempts[username]
 
-    def register(self):
+    def _register(self):
         """
         This function is for registration 
         """
@@ -247,13 +250,13 @@ class WeatherApp:
             return
 
         # ensure the password is secure
-        if not self.is_secure_password(password):
+        if not self._is_secure_password(password):
             messagebox.showerror("Registration Failed",
                                  "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
             return
         try:
             # hash the password and store it in the DB
-            hashed_password = self.hash_password(password)
+            hashed_password = self._hash_password(password)
             self.cursor.execute("INSERT INTO Users (Username, Password) VALUES (?, ?)",
                                  (username, hashed_password))
 
@@ -266,7 +269,7 @@ class WeatherApp:
 
             # show authenticated view
             self.show_weather_page()
-            self.update_welcome_label()
+            self._update_welcome_label()
         except sqlite3.IntegrityError:
             messagebox.showerror("Registration Failed", "Username already exists")
 
@@ -276,21 +279,21 @@ class WeatherApp:
         """
         # top nav
         self.top_nav_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
-        self.top_nav_frame.pack(fill=tk.X, pady=10)            
+        self.top_nav_frame.pack(fill=tk.X, pady=10)
 
         self.account_settings_button = customtkinter.CTkButton(self.top_nav_frame,
                                                                 text="Account Settings",
                                                                 font=("Arial", 12),
                                                                 command=self.show_account_settings)
 
-        self.account_settings_button.pack(side=tk.RIGHT, padx=10)        
+        self.account_settings_button.pack(side=tk.RIGHT, padx=10)
 
         self.weather_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
         self.weather_frame.pack(fill=tk.BOTH, expand=True)
         self.weather_label = customtkinter.CTkLabel(self.weather_frame,
                                                      text="Start Your Search Below!",
                                                      font=("Arial", 20))
-        self.weather_label.pack(expand=True)  
+        self.weather_label.pack(expand=True)
 
         # search frame
         self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame,
@@ -306,10 +309,10 @@ class WeatherApp:
                                                     font=("Arial", 12))
         self.zipcode_entry.grid(row=0, column=1, padx=5)
 
-        self.search_button = customtkinter.CTkButton(self.weather_search_frame, 
+        self.search_button = customtkinter.CTkButton(self.weather_search_frame,
                                                      text="Current Weather",
                                                      font=("Arial", 12),
-                                                     command=self.search_weather)
+                                                     command=self._search_weather)
         self.search_button.grid(row=0, column=2, padx=5)
         self.weather_trend_button = customtkinter.CTkButton(self.weather_search_frame,
                                                             text="Trend & Forecast",
@@ -338,17 +341,17 @@ class WeatherApp:
 
         # if we have a zip, run a search
         if self.preferred_zipcode:
-            self.search_weather(True)
+            self._search_weather(True)
             self.zipcode_entry.insert(0, self.preferred_zipcode)
         else:
-            default_results = self.get_lat_long_from_zip(10001) # default search
+            default_results = self._get_lat_long_from_zip(10001) # default search
             self.zipcode_entry.insert(0, 10001)
             self.show_map(default_results[0], default_results[1], "Start your search!")
 
         # hide login frame
         self.login_frame.pack_forget()
 
-    def search_weather(self, use_preferred_zip = False):
+    def _search_weather(self, use_preferred_zip = False):
         """
         This function searches for the weather in a location and displays it
         """
@@ -357,12 +360,12 @@ class WeatherApp:
             zipcode = self.preferred_zipcode
 
         # ensure the zip code is valid
-        if not self.is_valid_zipcode(zipcode):
+        if not self._is_valid_zipcode(zipcode):
             messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
             return
 
         # get the lat/long from zip so we can query the API
-        city_data = self.get_lat_long_from_zip(zipcode)
+        city_data = self._get_lat_long_from_zip(zipcode)
         if city_data is None:
             messagebox.showerror("Error",
                                  "Could not find city information for the provided zip code.")
@@ -373,7 +376,7 @@ class WeatherApp:
         city = city_data[2]
 
         # query the API
-        weather_data = self.get_weather_response(lat, long)
+        weather_data = self._get_weather_response(lat, long)
         if weather_data is None:
             messagebox.showerror("Error", "Could not retrieve weather information.")
             return
@@ -384,7 +387,7 @@ class WeatherApp:
         humidity = weather_data['current']['humidity']
         wind_speed = weather_data['current']['wind_speed']
         wind_direction_degrees = weather_data['current']['wind_deg']
-        wind_direction = self.degrees_to_cardinal(wind_direction_degrees)
+        wind_direction = self._degrees_to_cardinal(wind_direction_degrees)
 
         # create weather label text
         weather_info = f"{city}\n"
@@ -425,11 +428,11 @@ class WeatherApp:
         """
         # just update the weather info label
         zipcode = self.zipcode_entry.get()
-        if not self.is_valid_zipcode(zipcode):
+        if not self._is_valid_zipcode(zipcode):
             messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
             return
 
-        city_data = self.get_lat_long_from_zip(zipcode)
+        city_data = self._get_lat_long_from_zip(zipcode)
         if city_data is None:
             messagebox.showerror("Error",
                                  "Could not find city information for the provided zip code.")
@@ -440,14 +443,14 @@ class WeatherApp:
         city = city_data[2]
 
         # query the API
-        weather_data = self.get_weather_response(lat, long)
+        weather_data = self._get_weather_response(lat, long)
         if weather_data is None:
             messagebox.showerror("Error", "Could not retrieve weather information.")
             return
 
         # display results from the API
         # Implement trend and forecast functionality here
-        one_day_avg, five_day_avg = self.trend_calculations(weather_data)
+        one_day_avg, five_day_avg = self._trend_calculations(weather_data)
 
         # create weather label text
         weather_info = f"{city}\n"
@@ -459,7 +462,7 @@ class WeatherApp:
         self.show_map(lat, long, description)
         self.weather_frame.update_idletasks()
 
-    def trend_calculations(self, data):
+    def _trend_calculations(self, data):
         """
         Calculates the 1-day prediction using a 24-hour average
         and a 5-day prediction using a 5-day average
@@ -476,11 +479,11 @@ class WeatherApp:
 
         # 5 day avg
         daily_temperatures = [day["temp"]["day"] for day in data["daily"][:5]]
-        five_day_average = round(sum(daily_temperatures) / len(daily_temperatures), 2)       
+        five_day_average = round(sum(daily_temperatures) / len(daily_temperatures), 2)
 
         return one_day_average, five_day_average
 
-    def degrees_to_cardinal(self, degrees):
+    def _degrees_to_cardinal(self, degrees):
         """
         This function changes degrees to cardinal direction
 
@@ -494,7 +497,7 @@ class WeatherApp:
         index = round(degrees / 45) % 8
         return directions[index]
 
-    def center_window(self):
+    def _center_window(self):
         """
         This function centers the gui on start
         """
@@ -504,9 +507,9 @@ class WeatherApp:
         x = (screen_width - self.root.winfo_reqwidth()) / 2
         y = (screen_height - self.root.winfo_reqheight()) / 2
 
-        self.root.geometry("+%d+%d" % (x, y))    
+        self.root.geometry(f"+{x}+{y}")
 
-    def logout(self):
+    def _logout(self):
         """
         This function logs the user out
         """
@@ -577,7 +580,7 @@ class WeatherApp:
         btn_frame.pack()
 
         btn_save_changes = customtkinter.CTkButton(btn_frame, text="Save Changes",
-                                    command=lambda: self.save_account_changes(
+                                    command=lambda: self._save_account_changes(
                                         entry_username.get(),
                                         entry_password.get(),
                                         entry_confirm_password.get(),
@@ -587,13 +590,18 @@ class WeatherApp:
 
         btn_cancel = customtkinter.CTkButton(btn_frame,
                                               text="Cancel",
-                                              command=self.cancel_account_settings)
+                                              command=self._cancel_account_settings)
         btn_cancel.pack(side=tk.LEFT, padx=5, pady=10)
 
-        self.logout_button = customtkinter.CTkButton(self.account_settings_frame, text="Log Out", font=("Arial", 12), command=self.logout, fg_color="red", text_color="black")
+        self.logout_button = customtkinter.CTkButton(self.account_settings_frame,
+                                                     text="Log Out",
+                                                     font=("Arial", 12),
+                                                     command=self._logout,
+                                                     fg_color="red",
+                                                     text_color="black")
         self.logout_button.pack(pady=10)
 
-    def is_valid_zipcode(self, zipcode):
+    def _is_valid_zipcode(self, zipcode):
         """
         This function checks if the provided zip code is valid with REGEX
 
@@ -607,7 +615,7 @@ class WeatherApp:
         pattern = r'^\d{5}(?:-\d{4})?$'
         return bool(re.match(pattern, zipcode))
 
-    def is_secure_password(self, password):
+    def _is_secure_password(self, password):
         """
         This function checks if the provided password is secure. 
         They must be:
@@ -640,7 +648,7 @@ class WeatherApp:
 
         return True
 
-    def save_account_changes(self, new_username, new_password, confirm_password, new_zipcode):
+    def _save_account_changes(self, new_username, new_password, confirm_password, new_zipcode):
         """
         This function saves the changes made in the account settings form
 
@@ -655,12 +663,12 @@ class WeatherApp:
         if new_password.strip() != "":
             if new_password == confirm_password:
                 # make sure the password reaches secure reqs
-                if not self.is_secure_password(new_password):
+                if not self._is_secure_password(new_password):
                     messagebox.showerror("Password Error",
                                           "Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one digit, and one special character.")
                     return
                 # hash password for security
-                new_hashed_password = self.hash_password(new_password)
+                new_hashed_password = self._hash_password(new_password)
                 self.cursor.execute("UPDATE Users SET Password = ? WHERE UserId = ?",
                                         (new_hashed_password, self.userid))
                 self.conn.commit()
@@ -673,26 +681,28 @@ class WeatherApp:
                 self.current_username = new_username
 
         if new_zipcode.strip() != "":
-            if not self.is_valid_zipcode(new_zipcode):
+            if not self._is_valid_zipcode(new_zipcode):
                 messagebox.showerror("Zip Code Error", "Invalid zip code.")
                 return
-            else:
-                update_data["PreferredZip"] = new_zipcode
-                self.preferred_zipcode = new_zipcode
+            update_data["PreferredZip"] = new_zipcode
+            self.preferred_zipcode = new_zipcode
 
         # update fields filled by the user
         if update_data:
-            update_query = "UPDATE Users SET " + ", ".join(f"{key} = ?" for key in update_data.keys()) + " WHERE UserId = ?"
+            update_query = "UPDATE Users SET "
+            update_query += ", ".join(f"{key} = ?" for key in update_data.keys())
+            update_query += " WHERE UserId = ?"
+
             update_values = tuple(update_data.values()) + (self.userid,)
 
             self.cursor.execute(update_query, update_values)
-            self.conn.commit()            
+            self.conn.commit()
 
         # update welcome label with new user info
-        self.update_welcome_label()
+        self._update_welcome_label()
         messagebox.showinfo("Changes Saved", "Account settings updated successfully")
 
-    def cancel_account_settings(self):
+    def _cancel_account_settings(self):
         """
         This function sends the user back to the main page
         """
@@ -701,14 +711,14 @@ class WeatherApp:
 
         # run a search with the preferred zip and populate
         if self.preferred_zipcode:
-            self.search_weather(True)
+            self._search_weather(True)
             self.zipcode_entry.insert(0, self.preferred_zipcode)
 
         # show weather frame
         self.top_nav_frame.pack(fill=tk.X, pady=10)
         self.weather_frame.pack(fill=tk.BOTH, expand=True)
 
-    def update_welcome_label(self):
+    def _update_welcome_label(self):
         """
         This function updates the welcome label with username and zip code information
         """
@@ -717,7 +727,7 @@ class WeatherApp:
             welcome_message += f" (Preferred Zip Code: {self.preferred_zipcode})"
         self.welcome_label.configure(text=welcome_message)
 
-    def hash_password(self, password):
+    def _hash_password(self, password):
         """
         This function hashes passwords with SHA256
 
@@ -731,7 +741,7 @@ class WeatherApp:
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         return hashed_password
 
-    def get_lat_long_from_zip(self, zip_code):
+    def _get_lat_long_from_zip(self, zip_code):
         """
         Get latitude and longitude from a given zip code using the uszipcode library.
         
@@ -745,10 +755,13 @@ class WeatherApp:
         result = search.by_zipcode(zip_code)
         if result:
             return [result.lat, result.lng, result.post_office_city]
-        else:
-            messagebox.showerror("Search Error", "Unable to retrieve data for the given zip code. Please try a different zip code.")
 
-    def get_weather_response(self, lat, long):
+        messagebox.showerror("Search Error",
+                                "Unable to retrieve data for the given zip code." + 
+                                "Please try a different zip code.")
+        return [0, 0, "Error"]
+
+    def _get_weather_response(self, lat, long):
         """
         This function queries the weather API and returns the response JSON
 
@@ -760,15 +773,17 @@ class WeatherApp:
             dictionary: JSON response from API
         """
         # set up GET request
-        endpoint_URL = f"https://api.openweathermap.org/data/3.0/onecall?lat={lat}&lon={long}&appid={self.API_KEY}&units=imperial"
+        endpoint_url = "https://api.openweathermap.org/data/3.0/onecall"
+        endpoint_url += f"?lat={lat}&lon={long}&appid={self.API_KEY}&units=imperial"
 
-        response = requests.get(endpoint_URL, timeout=10)
+        response = requests.get(endpoint_url, timeout=10)
 
         if response.status_code == 200:
             return response.json()
- 
+
         messagebox.showerror("Search Error",
                               f"Failed to retrieve data. Status code: {response.status_code}")
+        return "Error"
 
 # this kicks off the app
 if __name__ == "__main__":
