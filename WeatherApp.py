@@ -40,6 +40,7 @@ class LoginApp:
 
         # init weather frame
         self.weather_frame = None
+        self.map_widget = None
 
         # init session variables
         self.preferred_zipcode = None
@@ -308,10 +309,9 @@ class LoginApp:
         # display results from the API
         description = weather_data['current']['weather'][0]['description']
         temperature = weather_data['current']['temp']
-        feels_like = weather_data['current']['feels_like']
         humidity = weather_data['current']['humidity']
         wind_speed = weather_data['current']['wind_speed']
-        wind_direction_degrees = weather_data['current']['wind_speed']
+        wind_direction_degrees = weather_data['current']['wind_deg']
         wind_direction = self.degrees_to_cardinal(wind_direction_degrees)
 
         # create weather label text
@@ -334,12 +334,15 @@ class LoginApp:
             long (float): longitude of the queried location
             description (string): text to display on the map
         """
-        map_widget = tkintermapview.TkinterMapView(self.map_frame, width=200, height=175, corner_radius=5)
-        map_widget.pack(fill=tk.BOTH, expand=True) 
+        if (self.map_widget is None):
+            self.map_widget = tkintermapview.TkinterMapView(self.map_frame, width=200, height=175, corner_radius=5)
+            self.map_widget.pack(fill=tk.BOTH, expand=True) 
 
-        map_widget.set_position(lat, long)
-        map_widget.set_zoom(12)
-        marker_1 = map_widget.set_marker(lat, long, text=f"{description}")
+        self.map_widget.set_position(lat, long)
+        self.map_widget.set_zoom(12)
+        self.map_widget.set_marker(lat, long, text=f"{description}")
+        self.map_frame.update_idletasks()
+
 
     def show_trend_and_forecast(self):
         """
