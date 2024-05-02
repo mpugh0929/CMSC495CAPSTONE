@@ -125,14 +125,18 @@ class WeatherApp:
                                                 font=("Arial", 12),
                                                 command=self._login)
         login_button.grid(row=0, column=0, padx=5)
-        login_tip = CTkToolTip(login_button, delay=0.5, message="Register for a free account if you have not already!")
+        login_tip = CTkToolTip(login_button,
+                               delay=0.5,
+                               message="Register for a free account if you have not already!")
 
         register_button = customtkinter.CTkButton(button_frame,
                                                    text="Register",
                                                     font=("Arial", 12),
                                                      command=self._register)
         register_button.grid(row=0, column=1, padx=5)
-        password_tip = CTkToolTip(register_button, delay=0.5, message="Make sure to follow secure password standards!")
+        password_tip = CTkToolTip(register_button,
+                                  delay=0.5,
+                                  message="Make sure to follow secure password standards!")
 
     def _create_database_connection(self):
         """
@@ -150,8 +154,7 @@ class WeatherApp:
                 UserId INTEGER PRIMARY KEY AUTOINCREMENT,
                 Username TEXT NOT NULL UNIQUE,
                 Password TEXT NOT NULL,
-                PreferredZip TEXT,
-                IsMember INTEGER DEFAULT 0
+                PreferredZip TEXT
             )
         ''')
         self.conn.commit()
@@ -321,14 +324,18 @@ class WeatherApp:
                                                      font=("Arial", 12),
                                                      command=self._search_weather)
         self.search_button.grid(row=0, column=2, padx=5)
-        search_tip = CTkToolTip(self.search_button, delay=0.5, message="Click here for up-to-date weather statistics")
+        search_tip = CTkToolTip(self.search_button,
+                                delay=0.5,
+                                message="Click here for up-to-date weather statistics")
 
         self.weather_trend_button = customtkinter.CTkButton(self.weather_search_frame,
                                                             text="Trend & Forecast",
                                                             font=("Arial", 12),
                                                             command=self.show_trend_and_forecast)
         self.weather_trend_button.grid(row=0, column=3, padx=5)
-        weather_trend_tip = CTkToolTip(self.weather_trend_button, delay=0.5, message="Click here for some real-time calculated weather trends")
+        weather_trend_tip = CTkToolTip(self.weather_trend_button,
+                                       delay=0.5,
+                                       message="Click here for some real-time calculated weather trends")
 
         # welcome label and results related info
         self.welcome_label = customtkinter.CTkLabel(self.weather_frame,
@@ -592,14 +599,18 @@ class WeatherApp:
                                         entry_zipcode.get()
                                     ))
         btn_save_changes.pack(side=tk.LEFT, padx=5, pady=10)
-        save_tip = CTkToolTip(btn_save_changes, delay=0.5, message="Click here to update your account information")
+        save_tip = CTkToolTip(btn_save_changes,
+                              delay=0.5,
+                              message="Click here to update your account information")
 
         btn_cancel = customtkinter.CTkButton(btn_frame,
                                               text="Cancel",                                              
                                               fg_color="grey",
                                               command=self._cancel_account_settings)
         btn_cancel.pack(side=tk.LEFT, padx=5, pady=10)
-        cancel_tip = CTkToolTip(btn_cancel, delay=0.5, message="Click here to return to the main menu")
+        cancel_tip = CTkToolTip(btn_cancel,
+                                delay=0.5,
+                                message="Click here to return to the main menu")
 
         logout_button = customtkinter.CTkButton(self.account_settings_frame,
                                                      text="Log Out",
@@ -608,7 +619,9 @@ class WeatherApp:
                                                      fg_color="red",
                                                      text_color="black")
         logout_button.pack(pady=10)
-        logout_tip = CTkToolTip(logout_button, delay=0.5, message="Click here to log out of your account")
+        logout_tip = CTkToolTip(logout_button,
+                                delay=0.5,
+                                message="Click here to log out of your account")
 
     def _is_valid_zipcode(self, zipcode):
         """
@@ -749,7 +762,7 @@ class WeatherApp:
 
         Args:
             password (string): the provided password
-
+            
         Returns:
             string: hashed password result
         """
