@@ -378,21 +378,21 @@ class WeatherApp:
         location_info = self._get_city_data_from_zip(zipcode)
 
         # query the API
-        weather_data = self._get_weather_response(location_info["lat"], location_info["long"])
-        if weather_data is None:
+        weather_data_response = self._get_weather_response(location_info["lat"], location_info["long"])
+        if weather_data_response is None:
             messagebox.showerror("Error", "Could not retrieve weather information.")
             return
-        weather_data = self._get_weather_response(location_info["lat"], location_info["long"])
-        if weather_data is None:
+        weather_data_response = self._get_weather_response(location_info["lat"], location_info["long"])
+        if weather_data_response is None:
             messagebox.showerror("Error", "Could not retrieve weather information.")
             return
 
         # display results from the API
-        description = weather_data['current']['weather'][0]['description']
-        temperature = weather_data['current']['temp']
-        humidity = weather_data['current']['humidity']
-        wind_speed = weather_data['current']['wind_speed']
-        wind_direction_degrees = weather_data['current']['wind_deg']
+        description = weather_data_response['current']['weather'][0]['description']
+        temperature = weather_data_response['current']['temp']
+        humidity = weather_data_response['current']['humidity']
+        wind_speed = weather_data_response['current']['wind_speed']
+        wind_direction_degrees = weather_data_response['current']['wind_deg']
         wind_direction = self._degrees_to_cardinal(wind_direction_degrees)
 
         # create weather label text
@@ -435,43 +435,43 @@ class WeatherApp:
         location_info = self._get_city_data_from_zip(self.zipcode_entry.get())
 
         # query the API
-        weather_data = self._get_weather_response(location_info["lat"], location_info["long"])
-        if weather_data is None:
+        weather_data_response = self._get_weather_response(location_info["lat"], location_info["long"])
+        if weather_data_response is None:
             messagebox.showerror("Error", "Could not retrieve weather information.")
             return
-        weather_data = self._get_weather_response(location_info["lat"], location_info["long"])
+        weather_data_response = self._get_weather_response(location_info["lat"], location_info["long"])
 
         # display results from the API
         # Implement trend and forecast functionality here
-        one_day_avg, five_day_avg = self._trend_calculations(weather_data)
+        one_day_avg, five_day_avg = self._trend_calculations(weather_data_response)
 
         # create weather label text
         weather_info = f"{location_info['city']}\n"
         weather_info += f"One Day Prediction: {one_day_avg}°F\n"
         weather_info += f"Five Day Average: {five_day_avg}°F\n"
-        description = weather_data['current']['weather'][0]['description']
+        description = weather_data_response['current']['weather'][0]['description']
 
         self.weather_label.configure(text=weather_info)
         self.show_map(location_info["lat"], location_info["long"], description)
         self.weather_frame.update_idletasks()
 
-    def _trend_calculations(self, data):
+    def _trend_calculations(self, weather_data_response):
         """
         Calculates the 1-day prediction using a 24-hour average
         and a 5-day prediction using a 5-day average
 
         Args:
-            data (dictionary): JSON API response
+            weeather_data_response (dictionary): JSON API response
 
         Returns:
             tuple (float, float): one day average, 5 day average
         """
         # 1 day avg
-        hourly_temperatures = [hour["temp"] for hour in data["hourly"][:24]]
+        hourly_temperatures = [hour["temp"] for hour in weather_data_response["hourly"][:24]]
         one_day_average = round(sum(hourly_temperatures) / len(hourly_temperatures), 2)
 
         # 5 day avg
-        daily_temperatures = [day["temp"]["day"] for day in data["daily"][:5]]
+        daily_temperatures = [day["temp"]["day"] for day in weather_data_response["daily"][:5]]
         five_day_average = round(sum(daily_temperatures) / len(daily_temperatures), 2)
 
         return one_day_average, five_day_average
@@ -497,6 +497,7 @@ class WeatherApp:
         Returns:
             dictionary: city information
         """
+        # make sure the zip is valid and found
         if not self._is_valid_zipcode(zipcode):
             messagebox.showerror("Invalid Zip Code", "Please enter a valid 5-digit zip code.")
             return
@@ -515,7 +516,7 @@ class WeatherApp:
         """
         screen_width = self.root.winfo_screenwidth()
         screen_height = self.root.winfo_screenheight()
-
+        # find the center of each
         x = (screen_width - self.root.winfo_reqwidth()) / 2
         y = (screen_height - self.root.winfo_reqheight()) / 2
 
@@ -653,6 +654,7 @@ class WeatherApp:
         Returns:
             bool: True if secure, False if not
         """
+        # check if password meets secure requirements
         if len(password) < 8:
             return False
 
@@ -686,7 +688,7 @@ class WeatherApp:
         new_password = self._sanitize_input(new_password)
         confirm_password = self._sanitize_input(confirm_password)
         new_zipcode = self._sanitize_input(confirm_password)
-
+        # verify inputs are there, compare against old versions to be sure we need to update it
         if new_password.strip() != "":
             if new_password == confirm_password:
                 # make sure the password reaches secure reqs
@@ -783,6 +785,7 @@ class WeatherApp:
         search = SearchEngine()
         result = search.by_zipcode(zip_code)
         if result:
+            # return dictionary of info
             city_data = {
                 "lat": result.lat,
                 "long": result.lng,
@@ -793,6 +796,7 @@ class WeatherApp:
         messagebox.showerror("Search Error",
                                 "Unable to retrieve data for the given zip code." + 
                                 "Please try a different zip code.")
+        # return error level dictionary
         city_data = {
             "lat": None,
             "long": None,
@@ -819,7 +823,7 @@ class WeatherApp:
 
         if response.status_code == 200:
             return response.json()
-
+        # if not a 200, return an error string
         messagebox.showerror("Search Error",
                               f"Failed to retrieve data. Status code: {response.status_code}")
         return "Error"
