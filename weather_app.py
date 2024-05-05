@@ -12,6 +12,7 @@ from CTkToolTip import *
 import requests
 from uszipcode import SearchEngine
 import tkintermapview
+from tkinter import ttk
 
 # setup custom tkinter
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
@@ -41,8 +42,9 @@ class WeatherApp:
         # begin DB connection
         self._create_database_connection()
         self._create_table()
-
         self.show_login_page()
+        
+            
 
         # init weather frame
         self.weather_frame = None
@@ -67,6 +69,10 @@ class WeatherApp:
         self.zipcode_entry = None
         self.zipcode_label = None
 
+    def show_frame(self, cont):
+        frame = self.frames[cont]
+        frame.tkraise()
+    
     def show_login_page(self):
         """
         This function creates the login frame
@@ -191,6 +197,8 @@ class WeatherApp:
                 # set session variables, boot up the weather page
                 self.current_username = user[1]
                 self.preferred_zipcode = user[3]
+              #  self.password_entry.set("")
+                self.login_frame.pack_forget()
                 self.show_weather_page()
                 self._update_welcome_label()
             else:
@@ -275,6 +283,7 @@ class WeatherApp:
             self.userid = user[0]
 
             # show authenticated view
+            self.login_frame.pack_forget()
             self.show_weather_page()
             self._update_welcome_label()
         except sqlite3.IntegrityError:
