@@ -89,7 +89,7 @@ class WeatherApp:
         title_label.pack(pady=10)
 
         subheading_label = customtkinter.CTkLabel(self.login_frame,
-                                                   text="Log In or Register to Get Started!",
+                                                   text="Log In or Register to Get Started",
                                                    font=("Arial", 12))
         subheading_label.pack()
 
