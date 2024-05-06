@@ -7,7 +7,7 @@ import hashlib
 import time
 import tkinter as tk
 from datetime import date
-from tkinter import messagebox
+from tkinter import messagebox, font
 import customtkinter
 from CTkToolTip import *
 import requests
@@ -76,7 +76,7 @@ class WeatherApp:
         This function creates the login frame
         """
         
-        self.login_frame = customtkinter.CTkFrame(self.root,fg_color='black')
+        self.login_frame = customtkinter.CTkFrame(self.root,fg_color='transparent')
         self.login_frame.pack(fill=tk.BOTH,
                                expand=True)
 
@@ -315,7 +315,7 @@ class WeatherApp:
         self.weather_frame.pack(fill=tk.BOTH, expand=True)
         self.weather_temperature = customtkinter.CTkLabel(self.weather_frame,
                                                      text="",
-                                                     font=("Arial", 40),
+                                                     font=("Arial Rounded MT", 40),
                                                      pady = 10)
         self.weather_label = customtkinter.CTkLabel(self.weather_frame,
                                                      text="Start Your Search Below!",
@@ -426,7 +426,7 @@ class WeatherApp:
         weather_info += f"Humidity: {humidity}%\n"
         weather_info += f"Wind: {wind_speed} mph {wind_direction}\n"
 
-        self.weather_temperature.configure(text = f"{str(temperature)}°F")
+        self.weather_temperature.configure(text = f"{str(int(temperature))}°F")
         self.weather_label.configure(text=weather_info)
         self.show_map(location_info["lat"], location_info["long"], description)
         self.weather_frame.update_idletasks()
