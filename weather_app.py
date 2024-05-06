@@ -12,8 +12,8 @@ from CTkToolTip import *
 import requests
 from uszipcode import SearchEngine
 import tkintermapview
-from tkinter import ttk
-from datetime import date
+from datetime import date,datetime
+from tkinter import *
 
 # setup custom tkinter
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
@@ -39,17 +39,18 @@ class WeatherApp:
         self.root.title("Weather App")
         self.root.geometry("525x300")
         self._center_window()
+        
 
         # begin DB connection
         self._create_database_connection()
         self._create_table()
         self.show_login_page()
-        
-            
+
 
         # init weather frame
         self.weather_frame = None
         self.map_widget = None
+
 
         # init properties - make PyLint happy
         self.preferred_zipcode = None
@@ -79,11 +80,12 @@ class WeatherApp:
         """
         This function creates the login frame
         """
-        self.login_frame = customtkinter.CTkFrame(self.root,
-                                                  fg_color= 'black')
+        
+        self.login_frame = customtkinter.CTkFrame(self.root,fg_color='black')
         self.login_frame.pack(fill=tk.BOTH,
                                expand=True)
 
+        
         # custom tkinter doesnt support padding top, so this will help to give breathing room
         spacer = customtkinter.CTkLabel(self.login_frame,
                                          text="",
@@ -295,6 +297,7 @@ class WeatherApp:
         This function loads the tkinter logic for the weather page
         """
         
+        
         #resizes window for new frame 
         root.geometry('525x400')
         
@@ -419,12 +422,13 @@ class WeatherApp:
 
         # create weather label text
         weather_info = f"{location_info['city']}\n"
-        weather_info += str(date.today()) + "\n\n"
+        weather_info += str(date.today().strftime("%d %b, %Y")) + "\n"
+        weather_info += str(datetime.now().strftime("%H:%M")) + "\n\n"
         weather_info += f"Description: {description} | "
         weather_info += f"Humidity: {humidity}%\n"
         weather_info += f"Wind: {wind_speed} mph {wind_direction}\n"
 
-        self.weather_temperature.configure(text = str(temperature) + "°")
+        self.weather_temperature.configure(text = str(int(temperature)) + "°")
         self.weather_label.configure(text=weather_info)
         self.show_map(location_info["lat"], location_info["long"], description)
         self.weather_frame.update_idletasks()
