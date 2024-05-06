@@ -6,6 +6,7 @@ import re
 import hashlib
 import time
 import tkinter as tk
+from datetime import date
 from tkinter import messagebox
 import customtkinter
 from CTkToolTip import *
@@ -35,13 +36,12 @@ class WeatherApp:
         # start up app
         self.root = app_root
         self.root.title("Weather App")
-        self.root.geometry("800x400")
+        self.root.geometry("525x300")
         self._center_window()
-
+        self.root.iconbitmap('weather-icon.ico')
         # begin DB connection
         self._create_database_connection()
         self._create_table()
-
         self.show_login_page()
 
         # init weather frame
@@ -64,6 +64,7 @@ class WeatherApp:
         self.account_settings_frame = None
         self.account_settings_button = None
         self.weather_label = None
+        self.weather_temperature = None
         self.zipcode_entry = None
         self.zipcode_label = None
 
@@ -72,7 +73,7 @@ class WeatherApp:
         This function creates the login frame
         """
         self.login_frame = customtkinter.CTkFrame(self.root,
-                                                   fg_color="transparent")
+                                                  fg_color= 'black')
         self.login_frame.pack(fill=tk.BOTH,
                                expand=True)
 
@@ -117,7 +118,8 @@ class WeatherApp:
 
         self.password_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        button_frame = customtkinter.CTkFrame(self.login_frame)
+        button_frame = customtkinter.CTkFrame(self.login_frame,
+                                              fg_color="transparent")
         button_frame.pack(pady=10)
 
         login_button = customtkinter.CTkButton(button_frame,
@@ -127,7 +129,7 @@ class WeatherApp:
         login_button.grid(row=0, column=0, padx=5)
         login_tip = CTkToolTip(login_button,
                                delay=0.5,
-                               message="Register for a free account if you have not already!")
+                               message="For Returning Users")
 
         register_button = customtkinter.CTkButton(button_frame,
                                                    text="Register",
@@ -136,7 +138,7 @@ class WeatherApp:
         register_button.grid(row=0, column=1, padx=5)
         password_tip = CTkToolTip(register_button,
                                   delay=0.5,
-                                  message="Make sure to follow secure password standards!")
+                                  message="For new Users")
 
     def _create_database_connection(self):
         """
@@ -191,6 +193,8 @@ class WeatherApp:
                 # set session variables, boot up the weather page
                 self.current_username = user[1]
                 self.preferred_zipcode = user[3]
+              #  self.password_entry.set("")
+                self.login_frame.pack_forget()
                 self.show_weather_page()
                 self._update_welcome_label()
             else:
@@ -275,15 +279,19 @@ class WeatherApp:
             self.userid = user[0]
 
             # show authenticated view
+            self.login_frame.pack_forget()
             self.show_weather_page()
             self._update_welcome_label()
         except sqlite3.IntegrityError:
             messagebox.showerror("Registration Failed", "Username already exists")
-
     def show_weather_page(self):
         """
         This function loads the tkinter logic for the weather page
         """
+        
+        #resizes window for new frame 
+        root.geometry('525x400')
+        
         # top nav
         self.top_nav_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
         self.top_nav_frame.pack(fill=tk.X, pady=10)
@@ -298,19 +306,26 @@ class WeatherApp:
         settings_tip_msg = "Click here to change information about your account or log out"
         settings_tip = CTkToolTip(self.account_settings_button, delay=0.5, message=settings_tip_msg)
 
-        self.weather_frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
+        self.weather_frame = customtkinter.CTkFrame(self.root,fg_color="transparent")
         self.weather_frame.pack(fill=tk.BOTH, expand=True)
+        self.weather_temperature = customtkinter.CTkLabel(self.weather_frame,
+                                                     text="",
+                                                     font=("Arial", 40),
+                                                     pady = 10)
         self.weather_label = customtkinter.CTkLabel(self.weather_frame,
                                                      text="Start Your Search Below!",
-                                                     font=("Arial", 20))
+                                                     font=("Arial", 20),
+                                                     pady = 10)
+
+        self.weather_temperature.pack(expand=True)
         self.weather_label.pack(expand=True)
 
         # search frame
         self.weather_search_frame = customtkinter.CTkFrame(self.weather_frame,
                                                             fg_color="transparent")
-        self.weather_search_frame.pack(pady=10)
+        self.weather_search_frame.pack(pady=5)
         self.zipcode_label = customtkinter.CTkLabel(self.weather_search_frame,
-                                                    text="Enter Zip Code:",
+                                                    text="Zip Code:",
                                                     font=("Arial", 12))
 
         self.zipcode_label.grid(row=0, column=0, padx=5)
@@ -333,9 +348,9 @@ class WeatherApp:
                                                             font=("Arial", 12),
                                                             command=self.show_trend_and_forecast)
         self.weather_trend_button.grid(row=0, column=3, padx=5)
-        weather_trend_tip = CTkToolTip(self.weather_trend_button,
-                                       delay=0.5,
-                                       message="Click here for some real-time calculated weather trends")
+        trend_tip = CTkToolTip(self.weather_trend_button,
+                                delay=0.5,
+                                message="Click here for calculated weather predictions")
 
         # welcome label and results related info
         self.welcome_label = customtkinter.CTkLabel(self.weather_frame,
@@ -354,7 +369,7 @@ class WeatherApp:
                                         pady=10)
 
         self.map_frame = customtkinter.CTkFrame(self.weather_info_frame)
-        self.map_frame.pack(side=tk.RIGHT, pady=10)
+        self.map_frame.pack(side=tk.TOP, pady=10)
 
         # if we have a zip, run a search
         if self.preferred_zipcode:
@@ -363,14 +378,17 @@ class WeatherApp:
         else:
             default_results = self._get_lat_long_from_zip(10001) # default search
             self.zipcode_entry.insert(0, 10001)
-            self.show_map(default_results[0], default_results[1], "Start your search!")
+            self.show_map(default_results['lat'], default_results['long'], "Start your search!")
 
         # hide login frame
         self.login_frame.pack_forget()
 
     def _search_weather(self, use_preferred_zip = False):
         """
-        This function searches for the weather in a location and displays it
+        This function searches for weather results in a certain location and displays it
+
+        Args:
+            use_preferred_zip (bool, optional): Use preferred zip for the search? Defaults to False.
         """
         zipcode = self.zipcode_entry.get()
         if use_preferred_zip:
@@ -397,14 +415,18 @@ class WeatherApp:
 
         # create weather label text
         weather_info = f"{location_info['city']}\n"
-        weather_info += f"Weather: {description}\n"
-        weather_info += f"Temperature: {temperature}°F\n"
+        weather_info += f"{str(date.today())}\n\n"
+        weather_info += f"Description: {description} | "
         weather_info += f"Humidity: {humidity}%\n"
-        weather_info += f"Wind Speed: {wind_speed} mph, Direction: {wind_direction}°\n"
+        weather_info += f"Wind: {wind_speed} mph {wind_direction}\n"
 
+        self.weather_temperature.configure(text = f"{str(temperature)}°F")
         self.weather_label.configure(text=weather_info)
         self.show_map(location_info["lat"], location_info["long"], description)
         self.weather_frame.update_idletasks()
+
+        #expands window to fit in the map and data
+        root.geometry('525x550')
 
 
     def show_map(self, lat, long, description):
@@ -415,6 +437,7 @@ class WeatherApp:
             long (float): longitude of the queried location
             description (string): text to display on the map
         """
+
         if self.map_widget is None:
             self.map_widget = tkintermapview.TkinterMapView(self.map_frame,
                                                             width=200,
@@ -435,11 +458,13 @@ class WeatherApp:
         location_info = self._get_city_data_from_zip(self.zipcode_entry.get())
 
         # query the API
-        weather_data_response = self._get_weather_response(location_info["lat"], location_info["long"])
+        weather_data_response = self._get_weather_response(location_info["lat"],
+                                                            location_info["long"])
         if weather_data_response is None:
             messagebox.showerror("Error", "Could not retrieve weather information.")
             return
-        weather_data_response = self._get_weather_response(location_info["lat"], location_info["long"])
+        weather_data_response = self._get_weather_response(location_info["lat"],
+                                                            location_info["long"])
 
         # display results from the API
         # Implement trend and forecast functionality here
@@ -520,7 +545,7 @@ class WeatherApp:
         x = (screen_width - self.root.winfo_reqwidth()) / 2
         y = (screen_height - self.root.winfo_reqheight()) / 2
 
-        self.root.geometry(f"+{x}+{y}")
+        self.root.geometry(f"+{int(x)}+{int(y)}")
 
     def _logout(self):
         """
@@ -687,7 +712,7 @@ class WeatherApp:
         new_username = self._sanitize_input(new_username)
         new_password = self._sanitize_input(new_password)
         confirm_password = self._sanitize_input(confirm_password)
-        new_zipcode = self._sanitize_input(confirm_password)
+        new_zipcode = self._sanitize_input(new_zipcode)
         # verify inputs are there, compare against old versions to be sure we need to update it
         if new_password.strip() != "":
             if new_password == confirm_password:
@@ -701,8 +726,9 @@ class WeatherApp:
                 self.cursor.execute("UPDATE Users SET Password = ? WHERE UserId = ?",
                                         (new_hashed_password, self.userid))
                 self.conn.commit()
-            messagebox.showerror("Password Error", "Passwords do not match")
-            return
+            else:
+                messagebox.showerror("Password Error", "Passwords do not match")
+                return
 
         if new_username.strip() != "":
             if new_username != self.current_username:
