@@ -13,6 +13,7 @@ from CTkToolTip import *
 import requests
 from uszipcode import SearchEngine
 import tkintermapview
+from tkinter import *
 
 # setup custom tkinter
 customtkinter.set_appearance_mode("Dark")  # Modes: "System" (standard), "Dark", "Light"
@@ -48,6 +49,7 @@ class WeatherApp:
         self.weather_frame = None
         self.map_widget = None
 
+
         # init properties - make PyLint happy
         self.preferred_zipcode = None
         self.current_username = None
@@ -72,11 +74,12 @@ class WeatherApp:
         """
         This function creates the login frame
         """
-        self.login_frame = customtkinter.CTkFrame(self.root,
-                                                  fg_color= 'black')
+        
+        self.login_frame = customtkinter.CTkFrame(self.root,fg_color='transparent')
         self.login_frame.pack(fill=tk.BOTH,
                                expand=True)
 
+        
         # custom tkinter doesnt support padding top, so this will help to give breathing room
         spacer = customtkinter.CTkLabel(self.login_frame,
                                          text="",
@@ -289,6 +292,7 @@ class WeatherApp:
         This function loads the tkinter logic for the weather page
         """
         
+        
         #resizes window for new frame 
         root.geometry('525x400')
         
@@ -310,7 +314,7 @@ class WeatherApp:
         self.weather_frame.pack(fill=tk.BOTH, expand=True)
         self.weather_temperature = customtkinter.CTkLabel(self.weather_frame,
                                                      text="",
-                                                     font=("Arial", 40),
+                                                     font=("Arial Rounded MT", 40),
                                                      pady = 10)
         self.weather_label = customtkinter.CTkLabel(self.weather_frame,
                                                      text="Start Your Search Below!",
@@ -415,12 +419,13 @@ class WeatherApp:
 
         # create weather label text
         weather_info = f"{location_info['city']}\n"
-        weather_info += f"{str(date.today())}\n\n"
+        weather_info += str(date.today().strftime("%d %b, %Y")) + "\n"
+        weather_info += str(datetime.now().strftime("%H:%M")) + "\n\n"
         weather_info += f"Description: {description} | "
         weather_info += f"Humidity: {humidity}%\n"
         weather_info += f"Wind: {wind_speed} mph {wind_direction}\n"
 
-        self.weather_temperature.configure(text = f"{str(temperature)}°F")
+        self.weather_temperature.configure(text = f"{str(int(temperature))}°F")
         self.weather_label.configure(text=weather_info)
         self.show_map(location_info["lat"], location_info["long"], description)
         self.weather_frame.update_idletasks()
@@ -438,12 +443,11 @@ class WeatherApp:
             description (string): text to display on the map
         """
 
-        if self.map_widget is None:
-            self.map_widget = tkintermapview.TkinterMapView(self.map_frame,
-                                                            width=200,
-                                                            height=175,
-                                                            corner_radius=5)
-            self.map_widget.pack(fill=tk.BOTH, expand=True)
+        self.map_widget = tkintermapview.TkinterMapView(self.map_frame,
+                                                        width=200,
+                                                        height=175,
+                                                        corner_radius=5)
+        self.map_widget.pack(fill=tk.BOTH, expand=True)
 
         self.map_widget.set_position(lat, long)
         self.map_widget.set_zoom(12)
