@@ -1,5 +1,7 @@
 Welcome to our app!
 
+** NOTE: Python and pip being installed is required to run this or proceed with these instructions
+
 To get started, you have 2 options:
 
 1. install customtkinter, CTkToolTip, requests, uszipcode, and tkintermapview using pip
