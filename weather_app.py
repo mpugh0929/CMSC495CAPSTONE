@@ -6,14 +6,13 @@ import re
 import hashlib
 import time
 import tkinter as tk
-from datetime import date
-from tkinter import messagebox, font
+from datetime import date, datetime
+from tkinter import messagebox
 import customtkinter
 from CTkToolTip import *
 import requests
 from uszipcode import SearchEngine
 import tkintermapview
-from datetime import date,datetime
 from tkinter import *
 
 # setup custom tkinter

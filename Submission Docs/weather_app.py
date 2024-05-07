@@ -6,7 +6,7 @@ import re
 import hashlib
 import time
 import tkinter as tk
-from datetime import date
+from datetime import date, datetime
 from tkinter import messagebox
 import customtkinter
 from CTkToolTip import *
