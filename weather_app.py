@@ -444,12 +444,11 @@ class WeatherApp:
             description (string): text to display on the map
         """
 
-        if self.map_widget is None:
-            self.map_widget = tkintermapview.TkinterMapView(self.map_frame,
-                                                            width=200,
-                                                            height=175,
-                                                            corner_radius=5)
-            self.map_widget.pack(fill=tk.BOTH, expand=True)
+        self.map_widget = tkintermapview.TkinterMapView(self.map_frame,
+                                                        width=200,
+                                                        height=175,
+                                                        corner_radius=5)
+        self.map_widget.pack(fill=tk.BOTH, expand=True)
 
         self.map_widget.set_position(lat, long)
         self.map_widget.set_zoom(12)
