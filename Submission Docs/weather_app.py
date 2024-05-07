@@ -442,12 +442,12 @@ class WeatherApp:
             long (float): longitude of the queried location
             description (string): text to display on the map
         """
-
-        self.map_widget = tkintermapview.TkinterMapView(self.map_frame,
-                                                        width=200,
-                                                        height=175,
-                                                        corner_radius=5)
-        self.map_widget.pack(fill=tk.BOTH, expand=True)
+        if self.map_widget is None:
+            self.map_widget = tkintermapview.TkinterMapView(self.map_frame,
+                                                            width=200,
+                                                            height=175,
+                                                            corner_radius=5)
+            self.map_widget.pack(fill=tk.BOTH, expand=True)
 
         self.map_widget.set_position(lat, long)
         self.map_widget.set_zoom(12)
@@ -562,6 +562,7 @@ class WeatherApp:
         self.preferred_zipcode = None
         self.current_username = None
         self.userid = 0
+        self.map_widget = None
 
         # show reg frame
         self.login_frame.pack(fill=tk.BOTH, expand=True)
